@@ -31,6 +31,7 @@
 #include<mutex>
 #include<thread>
 
+#define filename "LoopClosing.cc"
 
 namespace ORB_SLAM2
 {
@@ -57,10 +58,13 @@ void LoopClosing::SetLocalMapper(LocalMapping *pLocalMapper)
 
 void LoopClosing::Run()
 {
+    
     mbFinished =false;
 
     while(1)
     {
+	SET_CLOCK(loopClosingStart);
+
         // Check if there are keyframes in the queue
         if(CheckNewKeyFrames())
         {
@@ -83,6 +87,9 @@ void LoopClosing::Run()
             break;
 
         usleep(5000);
+
+	SET_CLOCK(loopClosingStop);
+	PRINT_CLOCK(filename,loopClosingStop,loopClosingStart);
     }
 
     SetFinish();

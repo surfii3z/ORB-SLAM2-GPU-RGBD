@@ -23,6 +23,8 @@
 
 #include <mutex>
 
+#define filename "Viewer.cc"
+
 namespace ORB_SLAM2
 {
 
@@ -53,6 +55,7 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
 
 void Viewer::Run()
 {
+
     mbFinished = false;
 
     pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1024,768);
@@ -93,6 +96,9 @@ void Viewer::Run()
 
     while(1)
     {
+
+	SET_CLOCK(viewStart);
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         mpMapDrawer->GetCurrentOpenGLCameraMatrix(Twc);
@@ -159,6 +165,9 @@ void Viewer::Run()
                 usleep(3000);
             }
         }
+
+	SET_CLOCK(viewStop);
+	PRINT_CLOCK(filename, viewStop, viewStart);
 
         if(CheckFinish())
             break;

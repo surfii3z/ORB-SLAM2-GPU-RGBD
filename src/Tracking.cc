@@ -39,6 +39,9 @@
 
 using namespace std;
 
+#define filename1 "Image Grab Tracking.cc"
+#define filename2 "Track Tracking.cc"
+
 namespace ORB_SLAM2
 {
 
@@ -237,6 +240,9 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
+
+    SET_CLOCK(imageStart);
+
     mImGray = im;
 
     if(mImGray.channels()==3)
@@ -259,6 +265,9 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
+    SET_CLOCK(imageStop);
+    PRINT_CLOCK(filename1, imageStop, imageStart);
+
     Track();
 
     return mCurrentFrame.mTcw.clone();
@@ -266,6 +275,9 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
+
+    SET_CLOCK(trackStart);
+
     PUSH_RANGE("Tracking::Track()", 2);
     if(mState==NO_IMAGES_YET)
     {
@@ -505,6 +517,9 @@ void Tracking::Track()
     }
 
     POP_RANGE;
+
+    SET_CLOCK(trackStop);
+    PRINT_CLOCK(filename2,trackStop,trackStart);
 }
 
 

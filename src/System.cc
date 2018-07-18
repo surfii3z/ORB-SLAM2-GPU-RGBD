@@ -26,6 +26,8 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 
+
+
 namespace ORB_SLAM2
 {
 
@@ -265,25 +267,35 @@ void System::Reset()
     mbReset = true;
 }
 
+// Rewrote function to conform to ORB_SLAM2 Issue 547
 void System::Shutdown()
 {
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
-    mpViewer->RequestFinish();
+
+    if (mpViewer) {
+	mpViewer->RequestFinish();
+	while(!mpViewer->isFinished()) 
+	    usleep(5000);
+
+	delete mpViewer;
+	mpViewer = static_cast<Viewer*>(NULL);
+    }
+
 
     // Wait until all thread have effectively stopped
     while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished()  ||
-          !mpViewer->isFinished()      || mpLoopCloser->isRunningGBA())
+          mpLoopCloser->isRunningGBA())
     {
         usleep(5000);
     }
 
     // Carefully handle threads
-    mptViewer->join();
-    mptLoopClosing->join();
-    mptLocalMapping->join();
-
-    pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+    //mptViewer->join();
+    //mptLoopClosing->join();
+    //mptLocalMapping->join();
+    if (mpViewer)  // <- always true 
+    	pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 }
 
 void System::SaveTrajectoryTUM(const string &filename)
@@ -322,7 +334,8 @@ void System::SaveTrajectoryTUM(const string &filename)
 
         // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
         while(pKF->isBad())
-        {
+        {   
+	    //cerr << "type of Trw*pKF is: " << type_name<decltype(Trw*pKF)>() << "\n";
             Trw = Trw*pKF->mTcp;
             pKF = pKF->GetParent();
         }
@@ -410,6 +423,7 @@ void System::SaveTrajectoryKITTI(const string &filename)
         while(pKF->isBad())
         {
           //  cout << "bad parent" << endl;
+	    //cerr << "type of Trw*pKF is: " << type_name<decltype(Trw*pKF)>() << "\n";
             Trw = Trw*pKF->mTcp;
             pKF = pKF->GetParent();
         }

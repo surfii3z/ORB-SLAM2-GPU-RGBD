@@ -25,6 +25,8 @@
 
 #include<mutex>
 
+#define filename "LocalMapping.cc"
+
 namespace ORB_SLAM2
 {
 
@@ -51,6 +53,7 @@ void LocalMapping::Run()
 
     while(1)
     {
+	SET_CLOCK(localMappingStart);
         // Tracking will see that Local Mapping is busy
         SetAcceptKeyFrames(false);
 
@@ -106,6 +109,8 @@ void LocalMapping::Run()
             break;
 
         usleep(3000);
+	SET_CLOCK(localMappingStop);
+	PRINT_CLOCK(filename, localMappingStop, localMappingStart);
     }
 
     SetFinish();

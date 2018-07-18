@@ -96,6 +96,10 @@ nvToolsExt
 # Build examples
 if(NO_EXAMPLES)
 message(STATUS "Don't build examples")
+
+add_executable(csi_camera gpu/csi_camera.cc)
+target_link_libraries(csi_camera ${PROJECT_NAME})
+
 else ()
 message(STATUS "Build examples")
 
@@ -110,6 +114,9 @@ target_link_libraries(mono_tum ${PROJECT_NAME})
 
 add_executable(mono_kitti Examples/Monocular/mono_kitti.cc)
 target_link_libraries(mono_kitti ${PROJECT_NAME})
+
+add_executable(csi_camera gpu/csi_camera.cc)
+target_link_libraries(csi_camera ${PROJECT_NAME})
 
 endif() # Build Examples
 
