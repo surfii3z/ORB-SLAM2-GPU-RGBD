@@ -99,6 +99,17 @@ namespace ORB_SLAM2 { namespace cuda {
     desc[tid] = (uchar)val;
   }
 
+  __global__ void scaleMult(KeyPoint * keypoints, const int npoints, float scale) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    for (int i = index; i < npoints; i += stride) {
+      //keypoints[i] = scale * keypoints[i];
+      //KeyPoint &kpt = keypoints[i];
+      keypoints[i].pt.x = scale * keypoints[i].pt.x;
+      keypoints[i].pt.y = scale * keypoints[i].pt.y;
+    }
+  }
+
 #undef GET_VALUE
 
   GpuOrb::GpuOrb(int maxKeypoints) : maxKeypoints(maxKeypoints), descriptors(maxKeypoints, 32, CV_8UC1) {
@@ -134,4 +145,18 @@ namespace ORB_SLAM2 { namespace cuda {
     desc.download(_descriptors, cvStream);
     checkCudaErrors( cudaStreamSynchronize(stream) );
   }
+
+  void GpuOrb::scaleFeaturesAsync(KeyPoint * _keypoints, const int npoints, float scale) {
+    if (npoints == 0) {
+      return;
+    }
+    checkCudaErrors( cudaMemcpyAsync(keypoints, _keypoints, sizeof(KeyPoint) * npoints, cudaMemcpyHostToDevice, stream) );
+    dim3 dimBlock((int) sizeof(KeyPoint));
+    dim3 dimGrid(npoints);
+    scaleMult<<<dimGrid, dimBlock, 0, stream>>>(keypoints, npoints, scale);
+    checkCudaErrors(cudaGetLastError());
+  }
+
+
+
 } }

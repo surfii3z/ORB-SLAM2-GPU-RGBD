@@ -35,6 +35,9 @@ Usage:
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include<opencv2/core/opengl.hpp>
+#include<opencv2/cudacodec.hpp>
+
 #include<System.h>
 #include <Utils.hpp>
 
@@ -104,10 +107,18 @@ int main(int argc, char **argv)
     double trackTimeSum = 0.0;
     // Main loop
     cv::Mat im;
+
+    //cv::cuda::GpuMat im2;
+    //cv::Ptr<cv::cudacodec::VideoReader> d_reader = cv::cudacodec::createVideoReader(pipeline, cv::CAP_GSTREAMER);
+    // If I want to feed a GpuMat directly to the frame 
+
     SET_CLOCK(t0);
     int frameNumber = 0;
     while (true) {
-      cap >> im;  // could need to specify it as a cv::Mat first before changing to cv::Mat
+      cap >> im;  
+
+      //d_reader >> im2;
+ 
       if (im.empty()) continue;
       SET_CLOCK(t1);
       double tframe = TIME_DIFF(t1, t0);

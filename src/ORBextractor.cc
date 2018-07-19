@@ -345,18 +345,19 @@ ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
 {
     mvScaleFactor.resize(nlevels);
     mvLevelSigma2.resize(nlevels);
+    mvInvScaleFactor.resize(nlevels);
+    mvInvLevelSigma2.resize(nlevels);
+
     mvScaleFactor[0]=1.0f;
     mvLevelSigma2[0]=1.0f;
+    mvInvScaleFactor[0]=1.0f/mvScaleFactor[0];
+    mvInvLevelSigma2[0]=1.0f/mvLevelSigma2[0];
+
     for(int i=1; i<nlevels; i++)
     {
         mvScaleFactor[i]=mvScaleFactor[i-1]*scaleFactor;
         mvLevelSigma2[i]=mvScaleFactor[i]*mvScaleFactor[i];
-    }
 
-    mvInvScaleFactor.resize(nlevels);
-    mvInvLevelSigma2.resize(nlevels);
-    for(int i=0; i<nlevels; i++)
-    {
         mvInvScaleFactor[i]=1.0f/mvScaleFactor[i];
         mvInvLevelSigma2[i]=1.0f/mvLevelSigma2[i];
     }
@@ -808,9 +809,15 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         if (level != 0)
         {
             float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+
+            //gpuOrb.scaleFeaturesAsync(keypoints.data(), keypoints.size(), scale);
+
+	    
             for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
                  keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
-                keypoint->pt *= scale;
+                 keypoint->pt *= scale;
+	    
+	    
         }
         // And add the keypoints to the output
         _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());

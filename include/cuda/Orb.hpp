@@ -20,9 +20,12 @@ namespace ORB_SLAM2 { namespace cuda {
     GpuMat desc;
     cudaStream_t stream;
     Stream cvStream;
+    float scale; 
   public:
     GpuOrb(int maxKeypoints = 10000);
     ~GpuOrb();
+
+    void scaleFeaturesAsync(KeyPoint * _keypoints, const int npoints, float scale);
 
     void launch_async(InputArray _image, const KeyPoint * _keypoints, const int npoints);
     void join(Mat &_descriptors);
