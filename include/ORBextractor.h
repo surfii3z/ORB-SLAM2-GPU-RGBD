@@ -94,6 +94,8 @@ public:
 
 protected:
 
+    void threaded_scale(cv::KeyPoint * keypoints, const int npoints, const float scale);
+
     void ComputePyramid(cv::Mat image);
     void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int minX,

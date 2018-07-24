@@ -63,6 +63,7 @@
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <ORBextractor.h>
+#include <parallel_for_thread.hpp>
 #include <cuda/Allocator.hpp>
 #include <cuda/Fast.hpp>
 #include <cuda/Orb.hpp>
@@ -812,10 +813,11 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
             //gpuOrb.scaleFeaturesAsync(keypoints.data(), keypoints.size(), scale);
 
+	    threaded_scale(keypoints.data(), keypoints.size(), scale);
 	    
-            for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
-                 keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
-                 keypoint->pt *= scale;
+            //for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+            //     keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
+            //     keypoint->pt *= scale;
 	    
 	    
         }
@@ -823,6 +825,13 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
     }
     POP_RANGE;
+}
+
+void ORBextractor::threaded_scale(KeyPoint * keypoints, const int npoints, const float scale){
+    parallel_for(npoints, [&](int start, int end){ 
+        for(int i = start; i < end; ++i)
+            keypoints[i].pt *= scale; 
+    } );
 }
 
 void ORBextractor::ComputePyramid(Mat image) {
