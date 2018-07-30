@@ -97,7 +97,7 @@ void Viewer::Run()
     while(1)
     {
 
-	SET_CLOCK(viewStart);
+	//SET_CLOCK(viewStart);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -166,8 +166,8 @@ void Viewer::Run()
             }
         }
 
-	SET_CLOCK(viewStop);
-	PRINT_CLOCK(filename, viewStop, viewStart);
+	//SET_CLOCK(viewStop);
+	//PRINT_CLOCK(filename, viewStop, viewStart);
 
         if(CheckFinish())
             break;

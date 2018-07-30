@@ -63,7 +63,7 @@ void LoopClosing::Run()
 
     while(1)
     {
-	SET_CLOCK(loopClosingStart);
+	//SET_CLOCK(loopClosingStart);
 
         // Check if there are keyframes in the queue
         if(CheckNewKeyFrames())
@@ -88,8 +88,8 @@ void LoopClosing::Run()
 
         usleep(5000);
 
-	SET_CLOCK(loopClosingStop);
-	PRINT_CLOCK(filename,loopClosingStop,loopClosingStart);
+	//SET_CLOCK(loopClosingStop);
+	//PRINT_CLOCK(filename,loopClosingStop,loopClosingStart);
     }
 
     SetFinish();

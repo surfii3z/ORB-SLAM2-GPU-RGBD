@@ -241,7 +241,7 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
 
-    SET_CLOCK(imageStart);
+    //SET_CLOCK(imageStart);
 
     mImGray = im;
 
@@ -265,8 +265,8 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
-    SET_CLOCK(imageStop);
-    PRINT_CLOCK(filename1, imageStop, imageStart);
+    //SET_CLOCK(imageStop);
+    //PRINT_CLOCK(filename1, imageStop, imageStart);
 
     Track();
 
@@ -276,7 +276,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 void Tracking::Track()
 {
 
-    SET_CLOCK(trackStart);
+    //SET_CLOCK(trackStart);
 
     PUSH_RANGE("Tracking::Track()", 2);
     if(mState==NO_IMAGES_YET)
@@ -518,8 +518,8 @@ void Tracking::Track()
 
     POP_RANGE;
 
-    SET_CLOCK(trackStop);
-    PRINT_CLOCK(filename2,trackStop,trackStart);
+    //SET_CLOCK(trackStop);
+    //PRINT_CLOCK(filename2,trackStop,trackStart);
 }
 
 
