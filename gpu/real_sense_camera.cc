@@ -31,6 +31,7 @@ Usage:
 #include<chrono>
 #include <iomanip>
 
+// include OpenCV header file
 #include<opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -40,6 +41,9 @@ Usage:
 
 #include<System.h>
 #include <Utils.hpp>
+
+#include <librealsense2/rs.hpp>
+#include <cv-helpers.hpp>
 
 using namespace std;
 
@@ -52,13 +56,7 @@ using namespace std;
         (std::chrono::duration_cast<std::chrono::duration<double>>((t1) - (t0)).count())
 */
 
-std::string get_tegra_pipeline(int width, int height, int fps) {
-    return "nvcamerasrc ! video/x-raw(memory:NVMM), width=(int)" + std::to_string(width) + ", height=(int)" +
-           std::to_string(height) + ", format=(string)I420, framerate=(fraction)" + std::to_string(fps) +
-           "/1 ! nvtee ! nvvidconv flip-method=0 ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink";
-}
 
-//appsink
 
 int main(int argc, char **argv)
 {
@@ -74,21 +72,33 @@ int main(int argc, char **argv)
 
     int WIDTH, HEIGHT, FPS;
     double TIME; 
-    if (argc > 3) WIDTH = std::atoi(argv[3]); else WIDTH = 640;
-    if (argc > 4) HEIGHT = std::atoi(argv[4]); else HEIGHT = 480;
+    if (argc > 3) WIDTH = std::atoi(argv[3]); else WIDTH = 640;  //1280
+    if (argc > 4) HEIGHT = std::atoi(argv[4]); else HEIGHT = 480; //720 
     if (argc > 5) FPS = std::atoi(argv[5]); else FPS = 30;
     if (argc > 6) TIME = std::atof(argv[6]); else TIME = 30.0;
 
+    //Contruct a pipeline which abstracts the device
+    rs2::pipeline pipe;
 
-    // Define the gstream pipelin 
-    std::string pipeline = get_tegra_pipeline(WIDTH, HEIGHT, FPS);
-    std::cout << "Using pipeline: \n\t" << pipeline << "\n";
+    //Create a configuration for configuring the pipeline with a non default profile
+    rs2::config cfg;
 
-    // Create OpenCV capture object, ensure it works.
-    cv::VideoCapture cap(pipeline, cv::CAP_GSTREAMER);
-    if (!cap.isOpened()) {
-        std::cout << "Connection failed";
-        return -1;
+    //Add desired streams to configuration
+    //cfg.enable_stream(RS2_STREAM_INFRARED, 1280, 720, RS2_FORMAT_Y8, 30);
+    //cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
+
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
+    //cfg.enable_stream(RS2_STREAM_INFRARED, 2, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
+
+    //Instruct pipeline to start streaming with the requested configuration
+    pipe.start(cfg);
+
+    // Camera warmup - dropping several first frames to let auto-exposure stabilize
+    rs2::frameset frames;
+    for(int i = 0; i < 30; i++)
+    {
+        //Wait for all configured streams to produce a frame
+        frames = pipe.wait_for_frames();
     }
 
     bool bUseViz = true;
@@ -115,12 +125,25 @@ int main(int argc, char **argv)
     SET_CLOCK(t0);
     int frameNumber = 0;
     while (true) {
-      cap >> im;  
 
-      //d_reader >> im2;
- 
-      if (im.empty()) continue;
+      //Get each frame
+      frames = pipe.wait_for_frames();
+      //rs2::frame ir_frame = frames.first(RS2_STREAM_INFRARED);
+      //rs2::frame depth_frame = frames.get_depth_frame();
+
       SET_CLOCK(t1);
+
+      //cv::Mat infared = frame_to_mat(ir_frame);
+      //cv::Mat depth = depth_frame_to_meters(pipe, depth_frame);
+      // get left and right infrared frames from frameset
+      rs2::video_frame ir_frame_left = frames.get_infrared_frame(1);
+      //rs2::video_frame ir_frame_right = frames.get_infrared_frame(2);
+
+      cv::Mat dMat_left = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC1, (void*)ir_frame_left.get_data());
+      //cv::Mat dMat_right = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC1, (void*)ir_frame_right.get_data());
+ 
+      //if (im.empty()) continue;
+      
       double tframe = TIME_DIFF(t1, t0);
       if (tframe > TIME) {
         break;
@@ -128,7 +151,9 @@ int main(int argc, char **argv)
 
       PUSH_RANGE("Track image", 4);
       // Pass the image to the SLAM system
-      SLAM.TrackMonocular(im,tframe);
+      SLAM.TrackMonocular(dMat_left,tframe);
+      //SLAM.TrackStereo(dMat_left, dMat_right, tframe);
+      //SLAM.TrackRGBD(infared, depth, tframe);
       POP_RANGE;
       SET_CLOCK(t2);
 

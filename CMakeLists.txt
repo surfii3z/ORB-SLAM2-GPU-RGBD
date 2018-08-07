@@ -39,6 +39,10 @@ else()
    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
+message(STATUS ${CUDACXX})
+message(STATUS ${CMAKE_CUDACXX_COMPILER})
+message(STATUS ${CMAKE_CUDA_COMPILER})
+
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 find_package(OpenCV REQUIRED)
@@ -92,15 +96,13 @@ ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+/usr/local/lib/librealsense2.so
 nvToolsExt
 )
 
 # Build examples
 if(NO_EXAMPLES)
 message(STATUS "Don't build examples")
-
-add_executable(csi_camera gpu/csi_camera.cc)
-target_link_libraries(csi_camera ${PROJECT_NAME})
 
 else ()
 message(STATUS "Build examples")
@@ -119,6 +121,9 @@ target_link_libraries(mono_kitti ${PROJECT_NAME})
 
 add_executable(csi_camera gpu/csi_camera.cc)
 target_link_libraries(csi_camera ${PROJECT_NAME})
+
+add_executable(real_sense gpu/real_sense_camera.cc)
+target_link_libraries(real_sense ${PROJECT_NAME})
 
 endif() # Build Examples
 
