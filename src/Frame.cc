@@ -470,6 +470,7 @@ void Frame::ComputeImageBounds(const cv::Mat &imLeft)
     }
 }
 
+// TODO Move all of this to the GPU, should be invariant because keeping a running tally 
 void Frame::ComputeStereoMatches()
 {
     mvuRight = vector<float>(N,-1.0f);
@@ -566,7 +567,8 @@ void Frame::ComputeStereoMatches()
             // sliding window search
             const int w = 5;
             cv::cuda::GpuMat gMat = mpORBextractorLeft->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduL - w, scaleduL + w + 1);
-            cv::Mat IL(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
+	    cv::Mat IL(gMat);
+            //cv::Mat IL(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
             IL.convertTo(IL,CV_32F);
             IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_32F);
 
@@ -584,8 +586,10 @@ void Frame::ComputeStereoMatches()
             for(int incR=-L; incR<=+L; incR++)
             {
                 cv::cuda::GpuMat gMat = mpORBextractorRight->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
-                cv::Mat IR(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
+                //cv::Mat IR(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
+		cv::Mat IR(gMat);
                 IR.convertTo(IR,CV_32F);
+		//cout << IR.at<float>(w,w) << endl; 
                 IR = IR - IR.at<float>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_32F);
 
                 float dist = cv::norm(IL,IR,cv::NORM_L1);

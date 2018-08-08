@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     //cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
 
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
-    //cfg.enable_stream(RS2_STREAM_INFRARED, 2, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 2, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
 
     //Instruct pipeline to start streaming with the requested configuration
     pipe.start(cfg);
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     bool bUseViz = true;
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::MONOCULAR,bUseViz);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::STEREO,bUseViz);
 
 
     cout << endl << "-------" << endl;
@@ -137,10 +137,10 @@ int main(int argc, char **argv)
       //cv::Mat depth = depth_frame_to_meters(pipe, depth_frame);
       // get left and right infrared frames from frameset
       rs2::video_frame ir_frame_left = frames.get_infrared_frame(1);
-      //rs2::video_frame ir_frame_right = frames.get_infrared_frame(2);
+      rs2::video_frame ir_frame_right = frames.get_infrared_frame(2);
 
       cv::Mat dMat_left = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC1, (void*)ir_frame_left.get_data());
-      //cv::Mat dMat_right = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC1, (void*)ir_frame_right.get_data());
+      cv::Mat dMat_right = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC1, (void*)ir_frame_right.get_data());
  
       //if (im.empty()) continue;
       
@@ -151,8 +151,8 @@ int main(int argc, char **argv)
 
       PUSH_RANGE("Track image", 4);
       // Pass the image to the SLAM system
-      SLAM.TrackMonocular(dMat_left,tframe);
-      //SLAM.TrackStereo(dMat_left, dMat_right, tframe);
+      //SLAM.TrackMonocular(dMat_left,tframe);
+      SLAM.TrackStereo(dMat_left, dMat_right, tframe);
       //SLAM.TrackRGBD(infared, depth, tframe);
       POP_RANGE;
       SET_CLOCK(t2);
