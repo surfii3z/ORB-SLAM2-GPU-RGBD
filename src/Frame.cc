@@ -21,6 +21,8 @@
 #include "Frame.h"
 #include "Converter.h"
 #include "ORBmatcher.h"
+#include <opencv2/core/cuda.hpp>
+#include <cuda/mat_norm.hpp>
 #include <thread>
 
 namespace ORB_SLAM2
@@ -62,7 +64,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
              ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc,
              cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
     :mpORBvocabulary(voc),mpORBextractorLeft(extractorLeft),mpORBextractorRight(extractorRight), mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
-     mpReferenceKF(static_cast<KeyFrame*>(NULL))
+     mpReferenceKF(static_cast<KeyFrame*>(NULL)), matNormGPU();
 {
     // Frame ID
     mnId = nNextId++;
@@ -91,7 +93,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 
     ComputeStereoMatches();
 
-    mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));    
+    mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
     mvbOutlier = vector<bool>(N,false);
 
 
@@ -129,7 +131,7 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
 
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();
-    mfScaleFactor = mpORBextractorLeft->GetScaleFactor();    
+    mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
     mfLogScaleFactor = log(mfScaleFactor);
     mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
     mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
@@ -266,7 +268,7 @@ void Frame::SetPose(cv::Mat Tcw)
 }
 
 void Frame::UpdatePoseMatrices()
-{ 
+{
     mRcw = mTcw.rowRange(0,3).colRange(0,3);
     mRwc = mRcw.t();
     mtcw = mTcw.rowRange(0,3).col(3);
@@ -278,7 +280,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     pMP->mbTrackInView = false;
 
     // 3D in absolute coordinates
-    cv::Mat P = pMP->GetWorldPos(); 
+    cv::Mat P = pMP->GetWorldPos();
 
     // 3D in camera coordinates
     const cv::Mat Pc = mRcw*P+mtcw;
@@ -470,7 +472,7 @@ void Frame::ComputeImageBounds(const cv::Mat &imLeft)
     }
 }
 
-// TODO Move all of this to the GPU, should be invariant because keeping a running tally 
+// TODO Move all of this to the GPU, should be invariant because keeping a running tally
 void Frame::ComputeStereoMatches()
 {
     mvuRight = vector<float>(N,-1.0f);
@@ -566,11 +568,14 @@ void Frame::ComputeStereoMatches()
 
             // sliding window search
             const int w = 5;
-            cv::cuda::GpuMat gMat = mpORBextractorLeft->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduL - w, scaleduL + w + 1);
-	    cv::Mat IL(gMat);
+            cv::cuda::GpuMat IL = mpORBextractorLeft->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduL - w, scaleduL + w + 1);
+
+            //cv::Mat IL(gMat);
             //cv::Mat IL(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
             IL.convertTo(IL,CV_32F);
-            IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_32F);
+            //IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_32F);
+            matNormGPU.setSubtractValue(IL, w);
+            matNormGPU.subtract_pixel_from_mat(IL);
 
             int bestDist = INT_MAX;
             int bestincR = 0;
@@ -585,14 +590,17 @@ void Frame::ComputeStereoMatches()
 
             for(int incR=-L; incR<=+L; incR++)
             {
-                cv::cuda::GpuMat gMat = mpORBextractorRight->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
+                cv::cuda::GpuMat IR = mpORBextractorRight->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
                 //cv::Mat IR(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
-		cv::Mat IR(gMat);
+                //cv::Mat IR(gMat);
                 IR.convertTo(IR,CV_32F);
-		//cout << IR.at<float>(w,w) << endl; 
-                IR = IR - IR.at<float>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_32F);
+		//cout << IR.at<float>(w,w) << endl;
+                //IR = IR - IR.at<float>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_32F);
+                matNormGPU.setSubtractValue(IR, w);
+                matNormGPU.subtract_pixel_from_mat(IR);
 
-                float dist = cv::norm(IL,IR,cv::NORM_L1);
+                float dist = (float) cv::cuda::norm(IL,IR,cv::NORM_L1);
+                //float dist = cv::norm(IL,IR,cv::NORM_L1);
                 if(dist<bestDist)
                 {
                     bestDist =  dist;

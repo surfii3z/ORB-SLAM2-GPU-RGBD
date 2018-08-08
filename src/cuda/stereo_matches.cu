@@ -4,7 +4,7 @@
 #include "opencv2/core/cuda/reduce.hpp"
 #include "opencv2/core/cuda/functional.hpp"
 #include <helper_cuda.h>
-#include <cuda/Orb.hpp>
+#include <cuda/stereo_matches.hpp>
 #include <Utils.hpp>
 
 using namespace cv;
@@ -13,7 +13,7 @@ using namespace cv::cuda::device;
 
 namespace ORB_SLAM2 { namespace cuda {
 
-  StereoMatching::StereoMatching(int maxKeypoints) : maxKeypoints(maxKeypoints), mDescriptors(maxKeypoints, 32, CV_8UC1), mDescriptorsRight(maxKeypoints, 32, CV_8UC1) {
+  StereoMatching::StereoMatching(int w) : maxKeypoints(maxKeypoints), mDescriptors(maxKeypoints, 32, CV_8UC1), mDescriptorsRight(maxKeypoints, 32, CV_8UC1) {
     checkCudaErrors( cudaStreamCreate(&stream) );
     cvStream = StreamAccessor::wrapStream(stream);
     checkCudaErrors( cudaMalloc(&mvKeys, sizeof(KeyPoint) * maxKeypoints) );
