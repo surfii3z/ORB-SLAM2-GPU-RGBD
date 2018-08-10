@@ -21,9 +21,11 @@
 #include "Frame.h"
 #include "Converter.h"
 #include "ORBmatcher.h"
+#include <FindType.hpp>
 #include <opencv2/core/cuda.hpp>
 #include <cuda/mat_norm.hpp>
 #include <thread>
+#include <Utils.hpp>
 
 namespace ORB_SLAM2
 {
@@ -64,12 +66,13 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
              ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc,
              cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
     :mpORBvocabulary(voc),mpORBextractorLeft(extractorLeft),mpORBextractorRight(extractorRight), mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
-     mpReferenceKF(static_cast<KeyFrame*>(NULL)), matNormGPU();
+     mpReferenceKF(static_cast<KeyFrame*>(NULL)), matNormGPU()
 {
     // Frame ID
     mnId = nNextId++;
 
     // Scale Level Info
+    SET_CLOCK(scaleStart);
     mnScaleLevels = mpORBextractorLeft->GetLevels();
     mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
     mfLogScaleFactor = log(mfScaleFactor);
@@ -77,21 +80,32 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
+    SET_CLOCK(scaleEnd);
+    std::cout << "Frame set scale info: " << TIME_DIFF(scaleEnd,scaleStart) << std::endl;
 
     // ORB extraction
+    SET_CLOCK(orbStart);
     thread threadLeft(&Frame::ExtractORB,this,0,imLeft);
     thread threadRight(&Frame::ExtractORB,this,1,imRight);
     threadLeft.join();
     threadRight.join();
+    SET_CLOCK(orbEnd);
+    std::cout << "Frame ORB extraction: " << TIME_DIFF(orbEnd, orbStart) << std::endl;
 
     if(mvKeys.empty())
         return;
 
     N = mvKeys.size();
 
+    SET_CLOCK(distortStart);
     UndistortKeyPoints();
+    SET_CLOCK(distortEnd);
+    std::cout << "Undistort key points: " << TIME_DIFF(distortEnd, distortStart) << std::endl;
 
+    SET_CLOCK(sMatchStart);
     ComputeStereoMatches();
+    SET_CLOCK(sMatchEnd);
+    std::cout << "Stereo Match Computation: " << TIME_DIFF(sMatchEnd, sMatchStart) << std::endl;
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
     mvbOutlier = vector<bool>(N,false);
@@ -117,7 +131,10 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 
     mb = mbf/fx;
 
+    SET_CLOCK(assignFeaturesStart);
     AssignFeaturesToGrid();
+    SET_CLOCK(assignFeaturesEnd);
+    std::cout << "Assign Features: " << TIME_DIFF(assignFeaturesEnd,assignFeaturesStart) << std::endl;
 }
 // Constructor for RGB-D cameras.
 Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp,
@@ -567,15 +584,23 @@ void Frame::ComputeStereoMatches()
             const float scaleduR0 = round(uR0*scaleFactor);
 
             // sliding window search
+	    //SET_CLOCK(t0);
             const int w = 5;
-            cv::cuda::GpuMat IL = mpORBextractorLeft->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduL - w, scaleduL + w + 1);
+            cv::cuda::GpuMat gMat = mpORBextractorLeft->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduL - w, scaleduL + w + 1);
 
-            //cv::Mat IL(gMat);
+            cv::Mat IL(gMat);
             //cv::Mat IL(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
-            IL.convertTo(IL,CV_32F);
+            //gMat.convertTo(gMat,CV_8UC1); //CV_32F
+            IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_8UC1);
+            //matNormGPU.setSubtractValue(gMat, w);
+            //matNormGPU.subtract_pixel_from_mat(gMat);
+            //gMat.convertTo(gMat,CV_8UC1); 
+	    //cv::Mat IL(gMat);
             //IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_32F);
-            matNormGPU.setSubtractValue(IL, w);
-            matNormGPU.subtract_pixel_from_mat(IL);
+	    //cout << IL.at<float>(w,w) << endl;
+
+	    //SET_CLOCK(t1);
+	    //cout << TIME_DIFF(t1, t0) << endl;
 
             int bestDist = INT_MAX;
             int bestincR = 0;
@@ -590,17 +615,28 @@ void Frame::ComputeStereoMatches()
 
             for(int incR=-L; incR<=+L; incR++)
             {
-                cv::cuda::GpuMat IR = mpORBextractorRight->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
+		//cout << "Increment " << incR << endl;
+		//SET_CLOCK(t0);
+                cv::cuda::GpuMat gMat2 = mpORBextractorRight->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
                 //cv::Mat IR(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
-                //cv::Mat IR(gMat);
-                IR.convertTo(IR,CV_32F);
+                cv::Mat IR(gMat2);
+                //gMat2.convertTo(gMat2,CV_8UC1); //CV_32F
 		//cout << IR.at<float>(w,w) << endl;
-                //IR = IR - IR.at<float>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_32F);
-                matNormGPU.setSubtractValue(IR, w);
-                matNormGPU.subtract_pixel_from_mat(IR);
 
-                float dist = (float) cv::cuda::norm(IL,IR,cv::NORM_L1);
-                //float dist = cv::norm(IL,IR,cv::NORM_L1);
+                //matNormGPU.setSubtractValue(gMat2, w);
+                //matNormGPU.subtract_pixel_from_mat(gMat2);
+                //gMat2.convertTo(gMat2,CV_8UC1);
+
+		//cv::Mat IR(gMat);
+                IR = IR - IR.at<float>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_8UC1);
+		//cout << IL.at<float>(w,w) << endl;
+		//cout << "Real? value " << IR.at<float>(w,w) << endl << endl;
+
+                //float dist = (float) cv::cuda::norm(gMat,gMat2,cv::NORM_L1);
+		//cout << type_name<decltype(gMat)>() << endl;
+                float dist = (float) cv::norm(IL,IR,cv::NORM_L1);
+	        //SET_CLOCK(t1);
+	        //cout << TIME_DIFF(t1, t0) << endl;
                 if(dist<bestDist)
                 {
                     bestDist =  dist;
@@ -609,6 +645,8 @@ void Frame::ComputeStereoMatches()
 
                 vDists[L+incR] = dist;
             }
+	    //SET_CLOCK(t1);
+	    //cout << TIME_DIFF(t1, t0) << endl;
 
             if(bestincR==-L || bestincR==L)
                 continue;

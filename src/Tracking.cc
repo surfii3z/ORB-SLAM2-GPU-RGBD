@@ -168,6 +168,7 @@ void Tracking::SetViewer(Viewer *pViewer)
 
 cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp)
 {
+    SET_CLOCK(stereoImageStart);
     mImGray = imRectLeft;
     cv::Mat imGrayRight = imRectRight;
 
@@ -197,6 +198,9 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
             cvtColor(imGrayRight,imGrayRight,CV_BGRA2GRAY);
         }
     }
+
+    SET_CLOCK(stereoImageEnd);
+    std::cout << "Stereo Image Grab: " << TIME_DIFF(stereoImageEnd,stereoImageStart) << std::endl;
 
     mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
@@ -276,7 +280,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 void Tracking::Track()
 {
 
-    //SET_CLOCK(trackStart);
+    SET_CLOCK(trackStart);
 
     PUSH_RANGE("Tracking::Track()", 2);
     if(mState==NO_IMAGES_YET)
@@ -518,8 +522,8 @@ void Tracking::Track()
 
     POP_RANGE;
 
-    //SET_CLOCK(trackStop);
-    //PRINT_CLOCK(filename2,trackStop,trackStart);
+    SET_CLOCK(trackStop);
+    std::cout << "Frame Tracking: " << TIME_DIFF(trackStop,trackStart) << std::endl;
 }
 
 

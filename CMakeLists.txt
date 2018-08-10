@@ -88,6 +88,7 @@ src/cuda/Allocator_gpu.cu
 src/cuda/Fast_gpu.cu
 src/cuda/Orb_gpu.cu
 src/cuda/Cuda.cu
+src/cuda/mat_norm.cu
 )
 
 target_link_libraries(${PROJECT_NAME}

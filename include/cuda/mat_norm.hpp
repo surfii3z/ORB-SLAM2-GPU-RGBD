@@ -14,14 +14,15 @@ namespace ORB_SLAM2 { namespace cuda {
 
   class MatNormGPU {
     //GpuMat gMat;
+    
     uint8_t subtract_val;
 
   public:
     MatNormGPU();
     ~MatNormGPU();
 
-    void MatNormGPU::setSubtractValue(cv::cuda::GpuMat _img, int w);
-    void MatNormGPU::subtract_pixel_from_mat (cv::cuda::GpuMat _img);
+    void setSubtractValue(cv::cuda::GpuMat _img, int w);
+    void subtract_pixel_from_mat (cv::cuda::GpuMat _img);
   };
 } }
 #endif
