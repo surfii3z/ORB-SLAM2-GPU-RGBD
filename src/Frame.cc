@@ -72,7 +72,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mnId = nNextId++;
 
     // Scale Level Info
-    SET_CLOCK(scaleStart);
+    //SET_CLOCK(scaleStart);
     mnScaleLevels = mpORBextractorLeft->GetLevels();
     mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
     mfLogScaleFactor = log(mfScaleFactor);
@@ -80,8 +80,8 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
-    SET_CLOCK(scaleEnd);
-    std::cout << "Frame set scale info: " << TIME_DIFF(scaleEnd,scaleStart) << std::endl;
+    //SET_CLOCK(scaleEnd);
+    //std::cout << "Frame set scale info: " << TIME_DIFF(scaleEnd,scaleStart) << std::endl;
 
     // ORB extraction
     SET_CLOCK(orbStart);
@@ -584,23 +584,23 @@ void Frame::ComputeStereoMatches()
             const float scaleduR0 = round(uR0*scaleFactor);
 
             // sliding window search
-	    //SET_CLOCK(t0);
+	        SET_CLOCK(t0);
             const int w = 5;
             cv::cuda::GpuMat gMat = mpORBextractorLeft->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduL - w, scaleduL + w + 1);
 
             cv::Mat IL(gMat);
             //cv::Mat IL(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
             //gMat.convertTo(gMat,CV_8UC1); //CV_32F
-            IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_8UC1);
+            IL = IL - IL.at<uint8_t>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_8UC1);
             //matNormGPU.setSubtractValue(gMat, w);
             //matNormGPU.subtract_pixel_from_mat(gMat);
-            //gMat.convertTo(gMat,CV_8UC1); 
+            //gMat.convertTo(gMat,CV_8UC1);
 	    //cv::Mat IL(gMat);
             //IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_32F);
 	    //cout << IL.at<float>(w,w) << endl;
 
-	    //SET_CLOCK(t1);
-	    //cout << TIME_DIFF(t1, t0) << endl;
+	        SET_CLOCK(t1);
+	        cout << "Subtract time: " << TIME_DIFF(t1, t0) << endl;
 
             int bestDist = INT_MAX;
             int bestincR = 0;
@@ -613,13 +613,16 @@ void Frame::ComputeStereoMatches()
             if(iniu<0 || endu >= mpORBextractorRight->mvImagePyramid[kpL.octave].cols)
                 continue;
 
+            cv::cuda::GpuMat r = mpORBextractorRight->mvImagePyramid[kpL.octave];
+            cv::Mat r2(r);
             for(int incR=-L; incR<=+L; incR++)
             {
 		//cout << "Increment " << incR << endl;
 		//SET_CLOCK(t0);
-                cv::cuda::GpuMat gMat2 = mpORBextractorRight->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
+                //cv::cuda::GpuMat gMat2 = r.rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
                 //cv::Mat IR(gMat.rows, gMat.cols, gMat.type(), gMat.data, gMat.step);
-                cv::Mat IR(gMat2);
+                //cv::Mat IR(gMat2);
+                cv::Mat IR = r2.rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduR0 + incR - w, scaleduR0 + incR + w + 1);
                 //gMat2.convertTo(gMat2,CV_8UC1); //CV_32F
 		//cout << IR.at<float>(w,w) << endl;
 
@@ -628,13 +631,16 @@ void Frame::ComputeStereoMatches()
                 //gMat2.convertTo(gMat2,CV_8UC1);
 
 		//cv::Mat IR(gMat);
-                IR = IR - IR.at<float>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_8UC1);
+                IR = IR - IR.at<uint8_t>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_8UC1);
 		//cout << IL.at<float>(w,w) << endl;
 		//cout << "Real? value " << IR.at<float>(w,w) << endl << endl;
-
+                SET_CLOCK(t3);
                 //float dist = (float) cv::cuda::norm(gMat,gMat2,cv::NORM_L1);
-		//cout << type_name<decltype(gMat)>() << endl;
                 float dist = (float) cv::norm(IL,IR,cv::NORM_L1);
+                SET_CLOCK(t4);
+                cout << "Evaluate norm: " << TIME_DIFF(t4,t3) << endl;
+		//cout << type_name<decltype(gMat)>() << endl;
+                //
 	        //SET_CLOCK(t1);
 	        //cout << TIME_DIFF(t1, t0) << endl;
                 if(dist<bestDist)

@@ -14,8 +14,9 @@ namespace ORB_SLAM2 { namespace cuda {
 
   class MatNormGPU {
     //GpuMat gMat;
-    
-    uint8_t subtract_val;
+
+    //uint8_t subtract_val;
+    GpuMat subMat; 
 
   public:
     MatNormGPU();

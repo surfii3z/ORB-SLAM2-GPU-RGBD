@@ -6,6 +6,7 @@
 #include <opencv2/core/cuda.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <Utils.hpp>
+#include <Allocator.hpp>
 
 using namespace cv;
 using namespace cv::cuda;
@@ -49,7 +50,7 @@ void MatNormGPU::setSubtractValue(const cv::cuda::GpuMat _img, int w)
     //std::cout << "finish kernel command" << std::endl;
 
     cudaMemcpyFromSymbol(&subtract_val, d_val, sizeof(uint8_t), 0, cudaMemcpyDeviceToHost);
-    
+    subMat = cv::cuda::GpuMat(_img.rows, _img.cols, _img.type(), subtract_val, cuda::gpu_mat_allocator);
     //cudaMemcpy(subtract_val, d_subtract_val, sizeof(int), cudaMemcpyDeviceToHost);
     //cudaFree(d_subtract_val);
     //std::cout << "gpu subtract value " << subtract_val << " here" << std::endl;
@@ -61,12 +62,12 @@ void kernel_subtract_pixel_from_mat (uint8_t * src, int MaxRows, int MaxCols, in
     int row = blockIdx.x * blockDim.x + threadIdx.x; //Row number
     int rowStride = blockDim.x * gridDim.x;
     int col = blockIdx.y * blockDim.y + threadIdx.y; //Column number
-    int colStride = blockDim.y * gridDim.y; 
+    int colStride = blockDim.y * gridDim.y;
 
     //unsigned int ch = blockIdx.z * blockDim.z + threadIdx.z; //Channel 0
     for (int i = row; i < MaxRows; i += rowStride) {
 	for (int j = col; j < MaxCols; j += colStride) {
-	    
+
     	    if (row<MaxRows && col<MaxCols) {
         	int idx = i * step + j; // maxChannels is 1 and ch is 0
         	src[idx] = src[idx] - sub;
@@ -81,10 +82,8 @@ void MatNormGPU::subtract_pixel_from_mat (cv::cuda::GpuMat _img)
 
     //const dim3 block(16, 16);
     //const dim3 grid(((_img.cols + block.x - 1) / block.x), ((_img.rows + block.y - 1)/ block.y));
-    
+
     //kernel_subtract_pixel_from_mat<<<grid, block>>> (_img.data,_img.rows, _img.cols, _img.step, subtract_val);
-    
-    cv::cuda::GpuMat subMat(_img.rows, _img.cols, _img.type(), subtract_val);
     //cv::cuda::subtract(_img, Scalar::all(subtract_val), _img);
     cv::cuda::subtract(_img, subMat, _img);
     //std::cout << "finish subtract pixel" << std::endl;

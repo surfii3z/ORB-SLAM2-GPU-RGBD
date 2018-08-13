@@ -467,7 +467,7 @@ void ExtractorNode::DivideNode(ExtractorNode &n1, ExtractorNode &n2, ExtractorNo
 vector<KeyPoint> ORBextractor::DistributeOctTree(const vector<KeyPoint>& vToDistributeKeys, const int minX,
                                        const int maxX, const int minY, const int maxY, const int N, const int level)
 {
-    // Compute how many initial nodes   
+    // Compute how many initial nodes
     const int nIni = round(static_cast<float>(maxX-minX)/(maxY-minY));
 
     const float hX = static_cast<float>(maxX-minX)/nIni;
@@ -548,7 +548,7 @@ vector<KeyPoint> ORBextractor::DistributeOctTree(const vector<KeyPoint>& vToDist
                 // Add childs if they contain points
                 if(n1.vKeys.size()>0)
                 {
-                    lNodes.push_front(n1);                    
+                    lNodes.push_front(n1);
                     if(n1.vKeys.size()>1)
                     {
                         nToExpand++;
@@ -590,7 +590,7 @@ vector<KeyPoint> ORBextractor::DistributeOctTree(const vector<KeyPoint>& vToDist
                 lit=lNodes.erase(lit);
                 continue;
             }
-        }       
+        }
 
         // Finish if there are more nodes than required features
         // or all nodes contain just one point
@@ -747,7 +747,7 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint>>& allKeypoint
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       OutputArray _descriptors)
-{ 
+{
     PUSH_RANGE("ORBextractor", 0);
     if(_image.empty())
         return;
@@ -813,13 +813,13 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 
             //gpuOrb.scaleFeaturesAsync(keypoints.data(), keypoints.size(), scale);
 
-	    threaded_scale(keypoints.data(), keypoints.size(), scale);
-	    
+            threaded_scale(keypoints.data(), keypoints.size(), scale);
+
             //for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
             //     keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
             //     keypoint->pt *= scale;
-	    
-	    
+
+
         }
         // And add the keypoints to the output
         _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
@@ -828,9 +828,9 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 }
 
 void ORBextractor::threaded_scale(KeyPoint * keypoints, const int npoints, const float scale){
-    parallel_for(npoints, [&](int start, int end){ 
+    parallel_for(npoints, [&](int start, int end){
         for(int i = start; i < end; ++i)
-            keypoints[i].pt *= scale; 
+            keypoints[i].pt *= scale;
     } );
 }
 

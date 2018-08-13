@@ -99,6 +99,8 @@ namespace ORB_SLAM2 { namespace cuda {
     desc[tid] = (uchar)val;
   }
 
+  #undef GET_VALUE
+
   __global__ void scaleMult(KeyPoint * keypoints, const int npoints, float scale) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -109,8 +111,6 @@ namespace ORB_SLAM2 { namespace cuda {
       keypoints[i].pt.y = scale * keypoints[i].pt.y;
     }
   }
-
-#undef GET_VALUE
 
   GpuOrb::GpuOrb(int maxKeypoints) : maxKeypoints(maxKeypoints), descriptors(maxKeypoints, 32, CV_8UC1) {
     checkCudaErrors( cudaStreamCreate(&stream) );
