@@ -214,7 +214,10 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp,
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
     // ORB extraction
+    SET_CLOCK(mono);
     ExtractORB(0,imGray);
+    SET_CLOCK(mono2);
+    std::cout << "Mono ORB extract: " << TIME_DIFF(mono2,mono) << std::endl;
 
     N = mvKeys.size();
 
@@ -584,7 +587,7 @@ void Frame::ComputeStereoMatches()
             const float scaleduR0 = round(uR0*scaleFactor);
 
             // sliding window search
-	        SET_CLOCK(t0);
+	        //SET_CLOCK(t0);
             const int w = 5;
             cv::cuda::GpuMat gMat = mpORBextractorLeft->mvImagePyramid[kpL.octave].rowRange(scaledvL - w, scaledvL + w + 1).colRange(scaleduL - w, scaleduL + w + 1);
 
@@ -599,8 +602,8 @@ void Frame::ComputeStereoMatches()
             //IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_32F);
 	    //cout << IL.at<float>(w,w) << endl;
 
-	        SET_CLOCK(t1);
-	        cout << "Subtract time: " << TIME_DIFF(t1, t0) << endl;
+	        //SET_CLOCK(t1);
+	        //cout << "Subtract time: " << TIME_DIFF(t1, t0) << endl;
 
             int bestDist = INT_MAX;
             int bestincR = 0;
@@ -634,11 +637,11 @@ void Frame::ComputeStereoMatches()
                 IR = IR - IR.at<uint8_t>(w,w) *cv::Mat::ones(IR.rows,IR.cols,CV_8UC1);
 		//cout << IL.at<float>(w,w) << endl;
 		//cout << "Real? value " << IR.at<float>(w,w) << endl << endl;
-                SET_CLOCK(t3);
+                //SET_CLOCK(t3);
                 //float dist = (float) cv::cuda::norm(gMat,gMat2,cv::NORM_L1);
                 float dist = (float) cv::norm(IL,IR,cv::NORM_L1);
-                SET_CLOCK(t4);
-                cout << "Evaluate norm: " << TIME_DIFF(t4,t3) << endl;
+                //SET_CLOCK(t4);
+                //cout << "Evaluate norm: " << TIME_DIFF(t4,t3) << endl;
 		//cout << type_name<decltype(gMat)>() << endl;
                 //
 	        //SET_CLOCK(t1);

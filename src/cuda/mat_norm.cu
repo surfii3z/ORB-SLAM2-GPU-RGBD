@@ -6,7 +6,7 @@
 #include <opencv2/core/cuda.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <Utils.hpp>
-#include <Allocator.hpp>
+#include <cuda/Allocator.hpp>
 
 using namespace cv;
 using namespace cv::cuda;
@@ -35,7 +35,7 @@ void kernel_get_mat_pixel (uint8_t * src, int w, int step) //uint8_t * pSub)
 
 void MatNormGPU::setSubtractValue(const cv::cuda::GpuMat _img, int w)
 {
-    //uint8_t * d_subtract_val;
+    uint8_t subtract_val;
     //cudaMalloc(&d_subtract_val, sizeof(int));
     //uint8_t * imgPtr;
     //cudaMalloc((void **)&imgPtr, _img.rows*_img.step);

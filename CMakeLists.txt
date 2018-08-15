@@ -126,6 +126,12 @@ target_link_libraries(csi_camera ${PROJECT_NAME})
 add_executable(real_sense gpu/real_sense_camera.cc)
 target_link_libraries(real_sense ${PROJECT_NAME})
 
+add_executable(rgbd_real_sense gpu/rgbd_real_sense.cc)
+target_link_libraries(rgbd_real_sense ${PROJECT_NAME})
+
+add_executable(mono_real_sense gpu/mono_real_sense.cc)
+target_link_libraries(mono_real_sense ${PROJECT_NAME})
+
 endif() # Build Examples
 
 unset(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
