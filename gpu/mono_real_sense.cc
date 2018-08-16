@@ -71,37 +71,26 @@ int main(int argc, char **argv)
 
     int WIDTH, HEIGHT, FPS;
     double TIME; 
-    if (argc > 3) WIDTH = std::atoi(argv[3]); else WIDTH = 1280;  //1280
-    if (argc > 4) HEIGHT = std::atoi(argv[4]); else HEIGHT = 720; //720 
+    if (argc > 3) WIDTH = std::atoi(argv[3]); else WIDTH = 640;  //1280
+    if (argc > 4) HEIGHT = std::atoi(argv[4]); else HEIGHT = 480; //720 
     if (argc > 5) FPS = std::atoi(argv[5]); else FPS = 30;
-    if (argc > 6) TIME = std::atof(argv[6]); else TIME = 30.0;
+    if (argc > 6) TIME = std::atof(argv[6]); else TIME = 210.0;
 
     //Contruct a pipeline which abstracts the device
     rs2::pipeline pipe;
 
     //Create a configuration for configuring the pipeline with a non default profile
-    rs2::config cfg;
+    //rs2::config cfg;
 
     //Add desired streams to configuration
-    cfg.enable_stream(RS2_STREAM_INFRARED, WIDTH, HEIGHT, RS2_FORMAT_Y8, 60);
+    //cfg.enable_stream(RS2_STREAM_INFRARED, WIDTH, HEIGHT, RS2_FORMAT_Y8, 30);
     //cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
 
     //cfg.enable_stream(RS2_STREAM_INFRARED, 1, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
     //cfg.enable_stream(RS2_STREAM_INFRARED, 2, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
 
     //Instruct pipeline to start streaming with the requested configuration
-    rs2::pipeline_profile selection = pipe.start(cfg);
-    auto depth_stream = selection.get_stream(RS2_STREAM_INFRARED)
-                             .as<rs2::video_stream_profile>();
-    auto resolution = std::make_pair(depth_stream.width(), depth_stream.height());
-    auto i = depth_stream.get_intrinsics();
-    auto principal_point = std::make_pair(i.ppx, i.ppy);
-    auto focal_length = std::make_pair(i.fx, i.fy);
-   
-    //std::cout << "Width: " << resolution[0] << "Height: " << resolution[1] << std::endl;
-    std::cout << "ppx: " << i.ppx << " ppy: " << i.ppy << std::endl;
-    std::cout << "fx: " << i.fx << " fy: " << i.fy << std::endl;
-    std::cout << "k1: " << i.coeffs[0] << " k2: " << i.coeffs[1] << " p1: " << i.coeffs[2] << " p2: " << i.coeffs[3] << " k3: " << i.coeffs[4] << std::endl;
+    rs2::pipeline_profile selection = pipe.start();//cfg);
 
     // Camera warmup - dropping several first frames to let auto-exposure stabilize
     rs2::frameset frames;
@@ -110,6 +99,18 @@ int main(int argc, char **argv)
         //Wait for all configured streams to produce a frame
         frames = pipe.wait_for_frames();
     }
+
+    auto depth_stream = selection.get_stream(RS2_STREAM_COLOR)
+                             .as<rs2::video_stream_profile>();
+    auto resolution = std::make_pair(depth_stream.width(), depth_stream.height());
+    auto i = depth_stream.get_intrinsics();
+    auto principal_point = std::make_pair(i.ppx, i.ppy);
+    auto focal_length = std::make_pair(i.fx, i.fy);
+
+    //std::cout << "Width: " << resolution[0] << "Height: " << resolution[1] << std::endl;
+    std::cout << "ppx: " << i.ppx << " ppy: " << i.ppy << std::endl;
+    std::cout << "fx: " << i.fx << " fy: " << i.fy << std::endl;
+    std::cout << "k1: " << i.coeffs[0] << " k2: " << i.coeffs[1] << " p1: " << i.coeffs[2] << " p2: " << i.coeffs[3] << " k3: " << i.coeffs[4] << std::endl;
 
     bool bUseViz = true;
 
@@ -146,10 +147,11 @@ int main(int argc, char **argv)
       //cv::Mat infared = frame_to_mat(ir_frame);
       //cv::Mat depth = depth_frame_to_meters(pipe, depth_frame);
       // get left and right infrared frames from frameset
-      rs2::video_frame ir_frame_left = frames.get_infrared_frame(1);
+      //rs2::video_frame ir_frame_left = frames.get_infrared_frame(1);
       //rs2::video_frame ir_frame_right = frames.get_infrared_frame(2);
 
-      cv::Mat dMat_left = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC1, (void*)ir_frame_left.get_data());
+      rs2::video_frame color = frames.first(RS2_STREAM_COLOR);
+      cv::Mat dMat_left = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC3, (void*)color.get_data());
       //cv::Mat dMat_right = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC1, (void*)ir_frame_right.get_data());
  
       //if (im.empty()) continue;

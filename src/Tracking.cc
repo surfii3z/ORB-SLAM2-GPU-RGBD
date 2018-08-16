@@ -1019,9 +1019,9 @@ bool Tracking::TrackLocalMap()
     mnMatchesInliers = 0;
 
     // Update MapPoints Statistics
-    std::atomic<long long> inliers(mnMatchesInliers);
-    parallel_for(mCurrentFrame.N, [&](int start, int end){
-    for(int i=start; i<end; i++)
+    //std::atomic<long long> inliers(mnMatchesInliers);
+    //parallel_for(mCurrentFrame.N, [&](int start, int end){
+    for(int i=0; i<mCurrentFrame.N; i++)
     {
         if(mCurrentFrame.mvpMapPoints[i])
         {
@@ -1031,18 +1031,18 @@ bool Tracking::TrackLocalMap()
                 if(!mbOnlyTracking)
                 {
                     if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
-                        inliers.fetch_add(1, std::memory_order_relaxed);
+                        mnMatchesInliers++; //inliers.fetch_add(1, std::memory_order_relaxed);
                 }
                 else
-                    inliers.fetch_add(1, std::memory_order_relaxed);
+                    mnMatchesInliers++; //inliers.fetch_add(1, std::memory_order_relaxed);
             }
             else if(mSensor==System::STEREO)
                 mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
 
         }
     }
-    });
-    mnMatchesInliers = (int) inliers;
+    //});
+    //mnMatchesInliers = (int) inliers;
 
     SET_CLOCK(locale);
     std::cout << "Track Local Map: " << TIME_DIFF(locale,local) << std::endl;

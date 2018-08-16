@@ -25,6 +25,7 @@
 #include <opencv2/core/cuda.hpp>
 #include <cuda/mat_norm.hpp>
 #include <thread>
+#include <parallel_for_thread.hpp>
 #include <Utils.hpp>
 
 namespace ORB_SLAM2
@@ -156,16 +157,26 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
     // ORB extraction
+    SET_CLOCK(orbStart);
     ExtractORB(0,imGray);
+    SET_CLOCK(orbEnd);
+    std::cout << "Frame ORB extraction: " << TIME_DIFF(orbEnd, orbStart) << std::endl;
 
     N = mvKeys.size();
 
     if(mvKeys.empty())
         return;
 
+    //SET_CLOCK(distortStart);
     UndistortKeyPoints();
+    //SET_CLOCK(distortEnd);
+    //std::cout << "Undistort key points: " << TIME_DIFF(distortEnd, distortStart) << std::endl;
 
+    //SET_CLOCK(sMatchStart);
     ComputeStereoFromRGBD(imDepth);
+    //SET_CLOCK(sMatchEnd);
+    //std::cout << "RGBD Stereo Match Computation: " << TIME_DIFF(sMatchEnd, sMatchStart) << std::endl;
+
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
     mvbOutlier = vector<bool>(N,false);
@@ -710,8 +721,8 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
 {
     mvuRight = vector<float>(N,-1);
     mvDepth = vector<float>(N,-1);
-
-    for(int i=0; i<N; i++)
+    parallel_for(N, [&](int start, int end){
+    for(int i=start; i<end; i++)
     {
         const cv::KeyPoint &kp = mvKeys[i];
         const cv::KeyPoint &kpU = mvKeysUn[i];
@@ -727,6 +738,7 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
             mvuRight[i] = kpU.pt.x-mbf/d;
         }
     }
+    });
 }
 
 cv::Mat Frame::UnprojectStereo(const int &i)
