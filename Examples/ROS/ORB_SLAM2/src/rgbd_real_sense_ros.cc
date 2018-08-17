@@ -47,6 +47,10 @@ Usage:
 #include <librealsense2/rs.hpp>
 #include <cv-helpers.hpp>
 
+#include<ros/ros.h>
+#include<tf/transform_listener.h>
+#include"geometry_msgs/PoseStamped.h"
+
 using namespace std;
 
 /*
@@ -67,12 +71,17 @@ bool operator ! (const cv::Mat &m) {return m.empty();}
 int main(int argc, char **argv)
 {
 
+    ros::init(argc, argv, "rgbd_ros");
+    ros::start();
+
     if(argc < 3)
     {
         cerr << endl << "Usage: ./csi_camera path_to_vocabulary path_to_settings" << endl;
+	ros::shutdown();
         return 1;
     } else if (argc > 8) {
         cerr << endl << "Usage: ./csi_camera path_to_vocabulary path_to_settings" << endl;
+	ros::shutdown();
         return 1;
     }
 
@@ -91,6 +100,9 @@ int main(int argc, char **argv)
     if (argc > 6) FPS = std::atoi(argv[6]); else FPS = 30;
     if (argc > 7) TIME = std::atof(argv[7]); else TIME = 30.0;
 
+    ros::NodeHandle nh; 
+    ros::Publisher pose_pub = nh.advertise<geometry_msgs::PoseStamped>("orb_pose_rgbd", 100);
+
     //Contruct a pipeline which abstracts the device
     rs2::pipeline pipe;
     //Calling pipeline's start() without any additional parameters will start the first device
@@ -99,13 +111,13 @@ int main(int argc, char **argv)
     //rs2::pipeline_profile profile = pipe.start();
 
     //Create a configuration for configuring the pipeline with a non default profile
-    rs2::config cfg;
+    //rs2::config cfg;
 
     //Add desired streams to configuration
-    cfg.enable_stream(RS2_STREAM_COLOR, WIDTH, HEIGHT, RS2_FORMAT_RGB8, 30); //RS2_FORMAT_Y8
-    cfg.enable_stream(RS2_STREAM_DEPTH, WIDTH, HEIGHT, RS2_FORMAT_Z16, 30);
+    //cfg.enable_stream(RS2_STREAM_COLOR, WIDTH, HEIGHT, RS2_FORMAT_Y8, 30);
+    //cfg.enable_stream(RS2_STREAM_DEPTH, WIDTH, HEIGHT, RS2_FORMAT_Z16, 30);
 
-    rs2::pipeline_profile selection = pipe.start(cfg);
+    rs2::pipeline_profile selection = pipe.start();//cfg);
 
     // Each depth camera might have different units for depth pixels, so we get it here
     // Using the pipeline's profile, we can retrieve the device that the pipeline uses
@@ -175,20 +187,20 @@ int main(int argc, char **argv)
 
 
       SET_CLOCK(t1);
+      ros::Time fTime = ros::Time::now();
 
       // This method of extracting the image is objectively faster 
       // but for some reason leads to point cloud visualization not showing up 
-      /*
+       
       rs2::video_frame ir_frame = frames.first(RS2_STREAM_COLOR);
       rs2::depth_frame d_frame = frames.get_depth_frame();
 
       cv::Mat infared = frame_to_mat(ir_frame);
       cv::Mat depth = depth_frame_to_meters(pipe, d_frame);
-      */
       
       // This method includes specifically aligning the image so is slower
       // but incluudes the point cloud visualization
-      
+      /*
       SET_CLOCK(imfeed);
       if (profile_changed(pipe.get_active_profile().get_streams(), selection.get_streams()))
       {
@@ -217,7 +229,7 @@ int main(int argc, char **argv)
 
       cv::Mat infared = frame_to_mat(other_frame);
       cv::Mat depth = frame_to_mat(aligned_depth_frame);
-      
+      */
 
       SET_CLOCK(imfeedEnd);
       std::cout << "Align image feed: " << TIME_DIFF(imfeedEnd,t1) << std::endl;
@@ -246,24 +258,22 @@ int main(int argc, char **argv)
       // Publish the pose information to a ROS node 
       if (!Tcw == false)
       {
-          //geometry_msgs::PoseStamped pose;
-          //pose.header.stamp = fTime;
-          //pose.header.frame_id ="map";
+          geometry_msgs::PoseStamped pose;
+          pose.header.stamp = fTime;
+          pose.header.frame_id ="map";
 
           cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t(); // Rotation information
           cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3); // translation information
           vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
 
-          //tf::Transform new_transform;
-          //new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
+          tf::Transform new_transform;
+          new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
 
-          //tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
-          //new_transform.setRotation(quaternion);
+          tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
+          new_transform.setRotation(quaternion);
 
-          //tf::poseTFToMsg(new_transform, pose.pose);
-          //pose_pub.publish(pose);
-	  //std::cout << "Position: x: " << twc.at<float>(0, 0) << ", y: " << twc.at<float>(0, 1) << ", z: " << twc.at<float>(0, 2) << std::endl;
-	  //std::cout << "Quaternion: " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << std::endl;
+          tf::poseTFToMsg(new_transform, pose.pose);
+          pose_pub.publish(pose);
       }
 
     }
@@ -275,6 +285,9 @@ int main(int argc, char **argv)
 
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+
+    // Shutdown ROS 
+    ros::shutdown();
 
     return 0;
 }

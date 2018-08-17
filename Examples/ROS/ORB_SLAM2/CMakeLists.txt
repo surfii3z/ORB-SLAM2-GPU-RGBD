@@ -11,8 +11,9 @@ ENDIF()
 
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 ") #-march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3") # -march=native")
+include(FindOpenMP)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -Wall  -O3 ") #-march=native ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -Wall  -O3") # -march=native")
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # Check C++11 or C++0x support
@@ -45,6 +46,7 @@ ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/../../../
 ${PROJECT_SOURCE_DIR}/../../../include
 ${Pangolin_INCLUDE_DIRS}
+/usr/local/lib/librealsense2.so
 nvToolsExt
 )
 
@@ -122,6 +124,15 @@ src/ros_rgbd.cc
 )
 
 target_link_libraries(RGBD
+${LIBS}
+)
+
+# real sense rgbd camera publishing 
+rosbuild_add_executable(real_sense_rgbd
+src/rgbd_real_sense_ros.cc
+)
+
+target_link_libraries(csi
 ${LIBS}
 )
 

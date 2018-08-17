@@ -13,6 +13,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g")
 set(CMAKE_C_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+include(FindOpenMP)
 LIST(APPEND CMAKE_C_FLAGS "-Wall -Wextra -DUSE_NVTX")
 LIST(APPEND CMAKE_CXX_FLAGS "-Wall -Wextra -DUSE_NVTX")
 
@@ -26,7 +27,8 @@ include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -std=c++11")
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
    add_definitions(-DCOMPILEDWITHC11)
    message(STATUS "Using flag -std=c++11.")
@@ -99,6 +101,7 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 /usr/local/lib/librealsense2.so
 nvToolsExt
+-lboost_system
 )
 
 # Build examples

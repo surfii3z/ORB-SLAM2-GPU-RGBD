@@ -35,6 +35,7 @@
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
 #include "Viewer.h"
+#include "omp.h"
 #include <Utils.hpp>
 #include <unistd.h>
 

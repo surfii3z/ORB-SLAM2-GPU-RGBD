@@ -295,8 +295,8 @@ void System::Shutdown()
     //mptViewer->join();
     //mptLoopClosing->join();
     //mptLocalMapping->join();
-    if (mpViewer)  // <- always true 
-    	pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+    //if (mpViewer)  // <- always true 
+    //	pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 }
 
 void System::SaveTrajectoryTUM(const string &filename)

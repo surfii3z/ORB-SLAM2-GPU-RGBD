@@ -31,6 +31,7 @@
 #include<Eigen/StdVector>
 
 #include "Converter.h"
+#include "omp.h"
 
 #include<mutex>
 
@@ -68,6 +69,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     long unsigned int maxKFid = 0;
 
     // Set KeyFrame vertices
+    #pragma omp parallel for
     for(size_t i=0; i<vpKFs.size(); i++)
     {
         KeyFrame* pKF = vpKFs[i];
@@ -190,6 +192,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     // Recover optimized data
 
     //Keyframes
+    #pragma omp parallel for
     for(size_t i=0; i<vpKFs.size(); i++)
     {
         KeyFrame* pKF = vpKFs[i];
@@ -210,6 +213,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     }
 
     //Points
+    #pragma omp parallel for
     for(size_t i=0; i<vpMP.size(); i++)
     {
         if(vbNotIncludedMP[i])
@@ -379,7 +383,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         optimizer.optimize(its[it]);
 
         nBad=0;
-        for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
+	#pragma omp parallel for reduction(+:nBad)
+        for(size_t i=0; i<vpEdgesMono.size(); i++)
         {
             g2o::EdgeSE3ProjectXYZOnlyPose* e = vpEdgesMono[i];
 
@@ -408,7 +413,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 e->setRobustKernel(0);
         }
 
-        for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
+	#pragma omp parallel for reduction(+:nBad)
+        for(size_t i=0; i<vpEdgesStereo.size(); i++)
         {
             g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = vpEdgesStereo[i];
 

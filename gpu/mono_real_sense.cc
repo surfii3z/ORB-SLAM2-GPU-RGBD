@@ -40,6 +40,7 @@ Usage:
 
 #include<System.h>
 #include <Utils.hpp>
+#include<Converter.h>
 
 #include <librealsense2/rs.hpp>
 #include <cv-helpers.hpp>
@@ -55,7 +56,7 @@ using namespace std;
         (std::chrono::duration_cast<std::chrono::duration<double>>((t1) - (t0)).count())
 */
 
-
+bool operator ! (const cv::Mat &m) {return m.empty();}
 
 int main(int argc, char **argv)
 {
@@ -80,17 +81,17 @@ int main(int argc, char **argv)
     rs2::pipeline pipe;
 
     //Create a configuration for configuring the pipeline with a non default profile
-    //rs2::config cfg;
+    rs2::config cfg;
 
     //Add desired streams to configuration
-    //cfg.enable_stream(RS2_STREAM_INFRARED, WIDTH, HEIGHT, RS2_FORMAT_Y8, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR, WIDTH, HEIGHT, RS2_FORMAT_RGB8, 30);
     //cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
 
     //cfg.enable_stream(RS2_STREAM_INFRARED, 1, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
     //cfg.enable_stream(RS2_STREAM_INFRARED, 2, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
 
     //Instruct pipeline to start streaming with the requested configuration
-    rs2::pipeline_profile selection = pipe.start();//cfg);
+    rs2::pipeline_profile selection = pipe.start(cfg);
 
     // Camera warmup - dropping several first frames to let auto-exposure stabilize
     rs2::frameset frames;
@@ -163,7 +164,7 @@ int main(int argc, char **argv)
 
       PUSH_RANGE("Track image", 4);
       // Pass the image to the SLAM system
-      SLAM.TrackMonocular(dMat_left,tframe);
+      cv::Mat Tcw = SLAM.TrackMonocular(dMat_left,tframe);
       //SLAM.TrackStereo(dMat_left, dMat_right, tframe);
       //SLAM.TrackRGBD(infared, depth, tframe);
       POP_RANGE;
@@ -176,6 +177,29 @@ int main(int argc, char **argv)
       tpos = (tpos + 1) % 10;
       //cerr << "Frame " << frameNumber << " : " << tframe << " " << trackTime << " " << 10 / tsum << "\n";
       ++frameNumber;
+
+      // Publish the pose information to a ROS node 
+      if (!Tcw == false)
+      {
+          //geometry_msgs::PoseStamped pose;
+          //pose.header.stamp = fTime;
+          //pose.header.frame_id ="map";
+
+          cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t(); // Rotation information
+          cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3); // translation information
+          vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
+
+          //tf::Transform new_transform;
+          //new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
+
+          //tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
+          //new_transform.setRotation(quaternion);
+
+          //tf::poseTFToMsg(new_transform, pose.pose);
+          //pose_pub.publish(pose);
+	  std::cout << "Position: x: " << twc.at<float>(0, 0) << ", y: " << twc.at<float>(0, 1) << ", z: " << twc.at<float>(0, 2) << std::endl;
+	  std::cout << "Quaternion: " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << std::endl;
+      }
     }
 
     cerr << "Mean track time: " << trackTimeSum / frameNumber << " , mean fps: " << frameNumber / TIME << "\n";
