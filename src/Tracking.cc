@@ -536,6 +536,7 @@ void Tracking::StereoInitialization()
         mpMap->AddKeyFrame(pKFini);
 
         // Create MapPoints and asscoiate to KeyFrame
+	#pragma omp parallel for
         for(int i=0; i<mCurrentFrame.N;i++)
         {
             float z = mCurrentFrame.mvDepth[i];
@@ -587,6 +588,7 @@ void Tracking::MonocularInitialization()
             mInitialFrame = Frame(mCurrentFrame);
             mLastFrame = Frame(mCurrentFrame);
             mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
+	    #pragma omp parallel for
             for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
                 mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
 
@@ -1259,8 +1261,13 @@ void Tracking::CreateNewKeyFrame()
 void Tracking::SearchLocalPoints()
 {
     // Do not search map points already matched
+    #pragma omp parallel 
+    #pragma omp single 
+    {
     for(vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit!=vend; vit++)
     {
+	#pragma omp task firstprivate(vit)
+	{
         MapPoint* pMP = *vit;
         if(pMP)
         {
@@ -1275,6 +1282,9 @@ void Tracking::SearchLocalPoints()
                 pMP->mbTrackInView = false;
             }
         }
+	}
+    }
+    #pragma omp taskwait
     }
 
     int nToMatch=0;
@@ -1322,13 +1332,12 @@ void Tracking::UpdateLocalPoints()
 {
     mvpLocalMapPoints.clear();
 
-    //#pragma omp parallel for
     for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(); itKF!=mvpLocalKeyFrames.end(); itKF++)
     {
         KeyFrame* pKF = *itKF;
         const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
 
-        for(vector<MapPoint*>::const_iterator itMP=vpMPs.begin(), itEndMP=vpMPs.end(); itMP!=itEndMP; itMP++)
+        for(vector<MapPoint*>::const_iterator itMP=vpMPs.begin(); itMP<vpMPs.end(); itMP++)
         {
             MapPoint* pMP = *itMP;
             if(!pMP)
@@ -1343,7 +1352,6 @@ void Tracking::UpdateLocalPoints()
         }
     }
 }
-
 
 void Tracking::UpdateLocalKeyFrames()
 {
@@ -1377,7 +1385,7 @@ void Tracking::UpdateLocalKeyFrames()
     mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
 
     // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
-    for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+    for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(); it != keyframeCounter.end(); it++)
     {
         KeyFrame* pKF = it->first;
 
@@ -1484,6 +1492,7 @@ bool Tracking::Relocalization()
 
     int nCandidates=0;
 
+    #pragma omp parallel for reduction(+:nCandidates)
     for(int i=0; i<nKFs; i++)
     {
         KeyFrame* pKF = vpCandidateKFs[i];
