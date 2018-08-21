@@ -21,6 +21,7 @@
 #include "Frame.h"
 #include "Converter.h"
 #include "ORBmatcher.h"
+#include "omp.h"
 #include <FindType.hpp>
 #include <opencv2/core/cuda.hpp>
 #include <cuda/mat_norm.hpp>
@@ -270,6 +271,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp,
 void Frame::AssignFeaturesToGrid()
 {
     int nReserve = 0.5f*N/(FRAME_GRID_COLS*FRAME_GRID_ROWS);
+    //#pragma omp parallel for schedule(dynamic,1) collapse(2)
     for(unsigned int i=0; i<FRAME_GRID_COLS;i++)
         for (unsigned int j=0; j<FRAME_GRID_ROWS;j++)
             mGrid[i][j].reserve(nReserve);
@@ -387,6 +389,7 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
 
     const bool bCheckLevels = (minLevel>0) || (maxLevel>=0);
 
+    //#pragma omp parallel for schedule(dynamic, 1) collapse(2)
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
@@ -464,6 +467,7 @@ void Frame::UndistortKeyPoints()
 
     // Fill undistorted keypoint vector
     mvKeysUn.resize(N);
+    #pragma omp parallel for 
     for(int i=0; i<N; i++)
     {
         cv::KeyPoint kp = mvKeys[i];
@@ -513,12 +517,12 @@ void Frame::ComputeStereoMatches()
 
     //Assign keypoints to row table
     vector<vector<size_t> > vRowIndices(nRows,vector<size_t>());
-
+    //#pragma omp parallel for
     for(int i=0; i<nRows; i++)
         vRowIndices[i].reserve(200);
 
     const int Nr = mvKeysRight.size();
-
+    //#pragma omp parallel for
     for(int iR=0; iR<Nr; iR++)
     {
         const cv::KeyPoint &kp = mvKeysRight[iR];
@@ -539,7 +543,7 @@ void Frame::ComputeStereoMatches()
     // For each left keypoint search a match in the right image
     vector<pair<int, int> > vDistIdx;
     vDistIdx.reserve(N);
-
+    //#pragma omp parallel for
     for(int iL=0; iL<N; iL++)
     {
         const cv::KeyPoint &kpL = mvKeys[iL];
@@ -721,8 +725,9 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
 {
     mvuRight = vector<float>(N,-1);
     mvDepth = vector<float>(N,-1);
-    parallel_for(N, [&](int start, int end){
-    for(int i=start; i<end; i++)
+    //parallel_for(N, [&](int start, int end){
+    //#pragma omp parallel for
+    for(int i=0; i<N; i++)
     {
         const cv::KeyPoint &kp = mvKeys[i];
         const cv::KeyPoint &kpU = mvKeysUn[i];
@@ -738,7 +743,7 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
             mvuRight[i] = kpU.pt.x-mbf/d;
         }
     }
-    });
+    //});
 }
 
 cv::Mat Frame::UnprojectStereo(const int &i)

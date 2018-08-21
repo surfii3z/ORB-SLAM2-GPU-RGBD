@@ -209,6 +209,7 @@ protected:
 
     //Motion Model
     cv::Mat mVelocity;
+    bool didOptimizePose;
 
     //Color order (true RGB, false BGR, ignored if grayscale)
     bool mbRGB;

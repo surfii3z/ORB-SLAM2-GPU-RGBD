@@ -145,6 +145,19 @@ int main(int argc, char **argv)
     {
         //Wait for all configured streams to produce a frame
         frames = pipe.wait_for_frames();
+
+        if (profile_changed(pipe.get_active_profile().get_streams(), selection.get_streams()))
+        {
+            //If the profile was changed, update the align object, and also get the new device's depth scale
+            selection = pipe.get_active_profile();
+            align_to = find_stream_to_align(selection.get_streams());
+            align = rs2::align(align_to);
+            depth_scale = get_depth_scale(selection.get_device());
+        }
+      
+
+        //Get processed aligned frame
+        auto processed = align.process(frames);
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
@@ -175,21 +188,13 @@ int main(int argc, char **argv)
 
 
       SET_CLOCK(t1);
-
-      // This method of extracting the image is objectively faster 
-      // but for some reason leads to point cloud visualization not showing up 
-      /*
-      rs2::video_frame ir_frame = frames.first(RS2_STREAM_COLOR);
-      rs2::depth_frame d_frame = frames.get_depth_frame();
-
-      cv::Mat infared = frame_to_mat(ir_frame);
-      cv::Mat depth = depth_frame_to_meters(pipe, d_frame);
-      */
+      
+      cv::Mat infared, depth;
       
       // This method includes specifically aligning the image so is slower
       // but incluudes the point cloud visualization
-      
-      SET_CLOCK(imfeed);
+      if (frameNumber % 150 == 0) 
+      {
       if (profile_changed(pipe.get_active_profile().get_streams(), selection.get_streams()))
       {
           //If the profile was changed, update the align object, and also get the new device's depth scale
@@ -208,16 +213,23 @@ int main(int argc, char **argv)
       rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
 
       //If one of them is unavailable, continue iteration
-      if (!aligned_depth_frame || !other_frame)
-      {
-          continue;
+      //if (!aligned_depth_frame || !other_frame)
+      //{
+      //    continue;
+      //}
+      
+
+
+      infared = frame_to_mat(other_frame);
+      depth = frame_to_mat(aligned_depth_frame);
+      } else {
+
+      rs2::video_frame ir_frame = frames.first(RS2_STREAM_COLOR);
+      rs2::depth_frame d_frame = frames.get_depth_frame();
+
+      infared = frame_to_mat(ir_frame);
+      depth = frame_to_mat(d_frame); //depth_frame_to_meters(pipe, d_frame);
       }
-      
-
-
-      cv::Mat infared = frame_to_mat(other_frame);
-      cv::Mat depth = frame_to_mat(aligned_depth_frame);
-      
 
       SET_CLOCK(imfeedEnd);
       std::cout << "Align image feed: " << TIME_DIFF(imfeedEnd,t1) << std::endl;

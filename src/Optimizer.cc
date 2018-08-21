@@ -32,6 +32,7 @@
 
 #include "Converter.h"
 #include "omp.h"
+#include <Utils.hpp>
 
 #include<mutex>
 
@@ -242,6 +243,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
 int Optimizer::PoseOptimization(Frame *pFrame)
 {
+    SET_CLOCK(popt);
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
@@ -453,6 +455,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     cv::Mat pose = Converter::toCvMat(SE3quat_recov);
     pFrame->SetPose(pose);
 
+    SET_CLOCK(popte);
+    std::cout << "Pose Optimization: " << TIME_DIFF(popte,popt) << std::endl;
     return nInitialCorrespondences-nBad;
 }
 

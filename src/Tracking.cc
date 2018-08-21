@@ -54,7 +54,6 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
     // Load camera parameters from settings file
-
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
     float fx = fSettings["Camera.fx"];
     float fy = fSettings["Camera.fy"];
@@ -280,6 +279,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
+    didOptimizePose = false;
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;
@@ -795,6 +795,7 @@ bool Tracking::TrackReferenceKeyFrame()
     mCurrentFrame.SetPose(mLastFrame.mTcw);
 
     Optimizer::PoseOptimization(&mCurrentFrame);
+    didOptimizePose = true;
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -957,6 +958,7 @@ bool Tracking::TrackWithMotionModel()
 
     // Optimize frame pose with all matches
     Optimizer::PoseOptimization(&mCurrentFrame);
+    didOptimizePose = true;
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -1025,11 +1027,17 @@ bool Tracking::TrackLocalMap()
     // We retrieve the local map and try to find matches to points in the local map.
     SET_CLOCK(local);
     UpdateLocalMap();
+    SET_CLOCK(updatelocalmap);
+    //std::cout << "Update Local Map: " << TIME_DIFF(updatelocalmap,local) << std::endl;
 
     SearchLocalPoints();
+    SET_CLOCK(searchlocalpoints);
+    std::cout << "Search Local Points: " << TIME_DIFF(searchlocalpoints,updatelocalmap) << std::endl;
 
     // Optimize Pose
-    Optimizer::PoseOptimization(&mCurrentFrame);
+    if (!didOptimizePose)
+        Optimizer::PoseOptimization(&mCurrentFrame);
+    SET_CLOCK(poseopt);
     mnMatchesInliers = 0;
 
     // Update MapPoints Statistics
@@ -1062,7 +1070,7 @@ bool Tracking::TrackLocalMap()
     mnMatchesInliers = inliers;
 
     SET_CLOCK(locale);
-    std::cout << "Track Local Map: " << TIME_DIFF(locale,local) << std::endl;
+    //std::cout << "Find Inliers: " << TIME_DIFF(locale,poseopt) << std::endl;
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
@@ -1261,12 +1269,12 @@ void Tracking::CreateNewKeyFrame()
 void Tracking::SearchLocalPoints()
 {
     // Do not search map points already matched
-    #pragma omp parallel 
-    #pragma omp single 
+    //#pragma omp parallel 
+    //#pragma omp single 
     {
     for(vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit!=vend; vit++)
     {
-	#pragma omp task firstprivate(vit)
+	//#pragma omp task firstprivate(vit)
 	{
         MapPoint* pMP = *vit;
         if(pMP)
@@ -1284,7 +1292,7 @@ void Tracking::SearchLocalPoints()
         }
 	}
     }
-    #pragma omp taskwait
+    //#pragma omp taskwait
     }
 
     int nToMatch=0;
@@ -1336,7 +1344,7 @@ void Tracking::UpdateLocalPoints()
     {
         KeyFrame* pKF = *itKF;
         const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
-
+	
         for(vector<MapPoint*>::const_iterator itMP=vpMPs.begin(); itMP<vpMPs.end(); itMP++)
         {
             MapPoint* pMP = *itMP;
@@ -1349,7 +1357,7 @@ void Tracking::UpdateLocalPoints()
                 mvpLocalMapPoints.push_back(pMP);
                 pMP->mnTrackReferenceForFrame=mCurrentFrame.mnId;
             }
-        }
+	}
     }
 }
 

@@ -75,7 +75,7 @@ int main(int argc, char **argv)
     if (argc > 3) WIDTH = std::atoi(argv[3]); else WIDTH = 640;  //1280
     if (argc > 4) HEIGHT = std::atoi(argv[4]); else HEIGHT = 480; //720 
     if (argc > 5) FPS = std::atoi(argv[5]); else FPS = 30;
-    if (argc > 6) TIME = std::atof(argv[6]); else TIME = 210.0;
+    if (argc > 6) TIME = std::atof(argv[6]); else TIME = 30.0;
 
     //Contruct a pipeline which abstracts the device
     rs2::pipeline pipe;

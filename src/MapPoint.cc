@@ -20,6 +20,7 @@
 
 #include "MapPoint.h"
 #include "ORBmatcher.h"
+#include "omp.h"
 
 #include<mutex>
 
@@ -275,8 +276,9 @@ void MapPoint::ComputeDistinctiveDescriptors()
     float Distances[N][N];
     for(size_t i=0;i<N;i++)
     {
+	size_t j;
         Distances[i][i]=0;
-        for(size_t j=i+1;j<N;j++)
+        for(j=i+1;j<N;j++)
         {
             int distij = ORBmatcher::DescriptorDistance(vDescriptors[i],vDescriptors[j]);
             Distances[i][j]=distij;
