@@ -19,8 +19,13 @@
 
 Usage: 
 
-./csi_camera path_to_vocabulary path_to_settings WIDTH HEIGHT FPS TIME 
+source /opt/ros/kinetic/setup.bash
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/nvidia/SLAM/ORB-SLAM2-GPU2016-final/Examples/ROS/ORB_SLAM2
 
+export ROS_MASTER_URI=http://tegra-ubuntu:11311/
+export ROS_IP=131.215.101.96
+
+./real_sense_rgbd ../../../Vocabulary/ORBvoc.txt ../../../RealSense_GPU/rgbd_real_sense.yaml
 
 */
 
@@ -51,16 +56,11 @@ Usage:
 #include<tf/transform_listener.h>
 #include"geometry_msgs/PoseStamped.h"
 
+#include <stdio.h>
+#include <stdlib.h> 
+#include <signal.h> 
+
 using namespace std;
-
-/*
-#define SET_CLOCK(t0) \
-        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-
-
-#define TIME_DIFF(t1, t0) \
-        (std::chrono::duration_cast<std::chrono::duration<double>>((t1) - (t0)).count())
-*/
 
 float get_depth_scale(rs2::device dev);
 rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams);
@@ -68,9 +68,15 @@ bool profile_changed(const std::vector<rs2::stream_profile>& current, const std:
 
 bool operator ! (const cv::Mat &m) {return m.empty();}
 
+volatile sig_atomic_t flag = 0;
+void on_stop(int sig) {
+    flag = 1;
+}
+
 int main(int argc, char **argv)
 {
 
+    signal(SIGINT, on_stop);
     ros::init(argc, argv, "rgbd_ros");
     ros::start();
 
@@ -105,19 +111,15 @@ int main(int argc, char **argv)
 
     //Contruct a pipeline which abstracts the device
     rs2::pipeline pipe;
-    //Calling pipeline's start() without any additional parameters will start the first device
-    // with its default streams.
-    //The start function returns the pipeline profile which the pipeline used to start the device
-    //rs2::pipeline_profile profile = pipe.start();
 
     //Create a configuration for configuring the pipeline with a non default profile
-    //rs2::config cfg;
+    rs2::config cfg;
 
     //Add desired streams to configuration
-    //cfg.enable_stream(RS2_STREAM_COLOR, WIDTH, HEIGHT, RS2_FORMAT_Y8, 30);
-    //cfg.enable_stream(RS2_STREAM_DEPTH, WIDTH, HEIGHT, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR, WIDTH, HEIGHT, RS2_FORMAT_RGB8, 30); //RS2_FORMAT_Y8
+    cfg.enable_stream(RS2_STREAM_DEPTH, WIDTH, HEIGHT, RS2_FORMAT_Z16, 30);
 
-    rs2::pipeline_profile selection = pipe.start();//cfg);
+    rs2::pipeline_profile selection = pipe.start(cfg);
 
     // Each depth camera might have different units for depth pixels, so we get it here
     // Using the pipeline's profile, we can retrieve the device that the pipeline uses
@@ -132,13 +134,7 @@ int main(int argc, char **argv)
     //The "align_to" is the stream type to which we plan to align depth frames.
     rs2::align align(align_to);
 
-
-    //cfg.enable_stream(RS2_STREAM_INFRARED, 1, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
-    //cfg.enable_stream(RS2_STREAM_INFRARED, 2, WIDTH, HEIGHT, RS2_FORMAT_Y8, FPS);
-
-    //Instruct pipeline to start streaming with the requested configuration
-    //Instruct pipeline to start streaming with the requested configuration
-    
+    // Get camera intrinsics 
     auto depth_stream = selection.get_stream(RS2_STREAM_COLOR)
                              .as<rs2::video_stream_profile>();
     auto resolution = std::make_pair(depth_stream.width(), depth_stream.height());
@@ -157,6 +153,20 @@ int main(int argc, char **argv)
     {
         //Wait for all configured streams to produce a frame
         frames = pipe.wait_for_frames();
+
+	//If the profile was changed, update the align object, and also get the new device's depth scale
+        if (profile_changed(pipe.get_active_profile().get_streams(), selection.get_streams()))
+        {
+            
+            selection = pipe.get_active_profile();
+            align_to = find_stream_to_align(selection.get_streams());
+            align = rs2::align(align_to);
+            depth_scale = get_depth_scale(selection.get_device());
+        }
+      
+
+        //Get processed aligned frame
+        auto processed = align.process(frames);
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
@@ -174,10 +184,6 @@ int main(int argc, char **argv)
     // Main loop
     cv::Mat im;
 
-    //cv::cuda::GpuMat im2;
-    //cv::Ptr<cv::cudacodec::VideoReader> d_reader = cv::cudacodec::createVideoReader(pipeline, cv::CAP_GSTREAMER);
-    // If I want to feed a GpuMat directly to the frame 
-
     SET_CLOCK(t0);
     int frameNumber = 0;
     while (true) {
@@ -188,20 +194,13 @@ int main(int argc, char **argv)
 
       SET_CLOCK(t1);
       ros::Time fTime = ros::Time::now();
-
-      // This method of extracting the image is objectively faster 
-      // but for some reason leads to point cloud visualization not showing up 
-       
-      rs2::video_frame ir_frame = frames.first(RS2_STREAM_COLOR);
-      rs2::depth_frame d_frame = frames.get_depth_frame();
-
-      cv::Mat infared = frame_to_mat(ir_frame);
-      cv::Mat depth = depth_frame_to_meters(pipe, d_frame);
+      
+      cv::Mat infared, depth;
       
       // This method includes specifically aligning the image so is slower
       // but incluudes the point cloud visualization
-      /*
-      SET_CLOCK(imfeed);
+      if (frameNumber % 150 == 0) 
+      {
       if (profile_changed(pipe.get_active_profile().get_streams(), selection.get_streams()))
       {
           //If the profile was changed, update the align object, and also get the new device's depth scale
@@ -219,17 +218,16 @@ int main(int argc, char **argv)
       rs2::video_frame other_frame = processed.first(align_to);
       rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
 
-      //If one of them is unavailable, continue iteration
-      if (!aligned_depth_frame || !other_frame)
-      {
-          continue;
+      infared = frame_to_mat(other_frame);
+      depth = frame_to_mat(aligned_depth_frame);
+      } else {
+
+      rs2::video_frame ir_frame = frames.first(RS2_STREAM_COLOR);
+      rs2::depth_frame d_frame = frames.get_depth_frame();
+
+      infared = frame_to_mat(ir_frame);
+      depth = frame_to_mat(d_frame);
       }
-      
-
-
-      cv::Mat infared = frame_to_mat(other_frame);
-      cv::Mat depth = frame_to_mat(aligned_depth_frame);
-      */
 
       SET_CLOCK(imfeedEnd);
       std::cout << "Align image feed: " << TIME_DIFF(imfeedEnd,t1) << std::endl;
@@ -274,6 +272,21 @@ int main(int argc, char **argv)
 
           tf::poseTFToMsg(new_transform, pose.pose);
           pose_pub.publish(pose);
+	  std::cout << "Position: x: " << twc.at<float>(0, 0) << ", y: " << twc.at<float>(0, 1) << ", z: " << twc.at<float>(0, 2) << std::endl;
+	  std::cout << "Quaternion: " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << std::endl;
+      }
+
+      //Handle Control+C on stop function 
+      if (flag) {
+          cerr << "Mean track time: " << trackTimeSum / frameNumber << " , mean fps: " << frameNumber / TIME_DIFF(t2,t0) << "\n";
+
+          // Save camera trajectory
+          SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+
+          // Stop all threads
+          SLAM.Shutdown();
+
+          return 0;
       }
 
     }

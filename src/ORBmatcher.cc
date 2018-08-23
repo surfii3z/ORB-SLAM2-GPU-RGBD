@@ -50,8 +50,6 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
     int nmatches=0;
 
     const bool bFactor = th!=1.0;
-    //std::atomic<long long> nm(nmatches);
-    //parallel_for(vpMapPoints.size(), [&](size_t start, size_t end){
     #pragma omp parallel for reduction(+:nmatches)
     for(size_t iMP=0; iMP<vpMapPoints.size(); iMP++)
     {
@@ -127,11 +125,8 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
 
             F.mvpMapPoints[bestIdx]=pMP;
             nmatches++;
-	    //nm.fetch_add(1, std::memory_order_relaxed);
         }
     }
-    //});
-    //nmatches = (int) nm;
     return nmatches;
 }
 
@@ -192,7 +187,6 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
             const vector<unsigned int> vIndicesKF = KFit->second;
             const vector<unsigned int> vIndicesF = Fit->second;
 
-	    //parallel_for(vIndicesKF.size(), [&](size_t start, size_t end){
 	    #pragma omp parallel for reduction(+:nmatches)
             for(size_t iKF=0; iKF<vIndicesKF.size(); iKF++)
             {
@@ -255,13 +249,10 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
                             rotHist[bin].push_back(bestIdxF);
                         }
                         nmatches++;
-			//nm.fetch_add(1, std::memory_order_relaxed);
                     }
                 }
 
             }
-	    //});
-	    //nmatches = (int) nm;
 
             KFit++;
             Fit++;
@@ -274,7 +265,6 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
         {
             Fit = F.mFeatVec.lower_bound(KFit->first);
         }
-	//nmatches = (int) nm;
     }
 
 
@@ -286,10 +276,6 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
 
         ComputeThreeMaxima(rotHist,HISTO_LENGTH,ind1,ind2,ind3);
 
-	//std::atomic<long long> nm2(nmatches);
-
-	//parallel_for(HISTO_LENGTH, [&](int start, int end){
-	//#pragma omp parallel for reduction(-: nmatches)
 	#pragma omp parallel for reduction(-:nmatches)
         for(int i=0; i<HISTO_LENGTH; i++)
         {
@@ -299,11 +285,8 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
             {
                 vpMapPointMatches[rotHist[i][j]]=static_cast<MapPoint*>(NULL);
                 nmatches--;
-		//nm2.fetch_sub(1, std::memory_order_relaxed);
             }
         }
-	//});
-	//nmatches = (int) nm2;
     }
 
     return nmatches;
@@ -329,9 +312,6 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
     spAlreadyFound.erase(static_cast<MapPoint*>(NULL));
 
     int nmatches=0;
-    //std::atomic<long long> nm(nmatches);
-    // For each Candidate MapPoint Project and Match
-    //parallel_for(vpPoints.size(), [&](int start, int end){
     #pragma omp parallel for reduction(+:nmatches)
     for(size_t iMP=0; iMP<vpPoints.size(); iMP++)
     {
@@ -419,12 +399,9 @@ int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapP
         {
             vpMatched[bestIdx]=pMP;
             nmatches++;
-	    //nm.fetch_add(1, std::memory_order_relaxed);
         }
 
     }
-    //});
-    //nmatches = (int) nm;
 
     return nmatches;
 }
@@ -527,8 +504,6 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
 
         ComputeThreeMaxima(rotHist,HISTO_LENGTH,ind1,ind2,ind3);
 
-        //std::atomic<long long> nm2(nmatches);
-        //parallel_for(HISTO_LENGTH, [&](int start, int end){
 	#pragma omp parallel for reduction(-:nmatches)
         for(int i=0; i<HISTO_LENGTH; i++)
         {
@@ -541,21 +516,16 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
                 {
                     vnMatches12[idx1]=-1;
                     nmatches--;
-		    //nm.fetch_sub(1, std::memory_order_relaxed);
                 }
             }
         }
-	//});
-	//nmatches = (int) nm2;
     }
 
     //Update prev matched
-    //parallel_for(vnMatches12.size(), [&](size_t start, size_t end){
     #pragma omp parallel for
     for(size_t i1=0; i1<vnMatches12.size(); i1++)
         if(vnMatches12[i1]>=0)
             vbPrevMatched[i1]=F2.mvKeysUn[vnMatches12[i1]].pt;
-    //});
 
     return nmatches;
 }

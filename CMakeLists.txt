@@ -126,13 +126,13 @@ target_link_libraries(mono_kitti ${PROJECT_NAME})
 add_executable(csi_camera gpu/csi_camera.cc)
 target_link_libraries(csi_camera ${PROJECT_NAME})
 
-add_executable(real_sense gpu/real_sense_camera.cc)
-target_link_libraries(real_sense ${PROJECT_NAME})
+add_executable(stereo_real_sense RealSense_GPU/stereo_real_sense.cc)
+target_link_libraries(stereo_real_sense ${PROJECT_NAME})
 
-add_executable(rgbd_real_sense gpu/rgbd_real_sense.cc)
+add_executable(rgbd_real_sense RealSense_GPU/rgbd_real_sense.cc)
 target_link_libraries(rgbd_real_sense ${PROJECT_NAME})
 
-add_executable(mono_real_sense gpu/mono_real_sense.cc)
+add_executable(mono_real_sense RealSense_GPU/mono_real_sense.cc)
 target_link_libraries(mono_real_sense ${PROJECT_NAME})
 
 endif() # Build Examples

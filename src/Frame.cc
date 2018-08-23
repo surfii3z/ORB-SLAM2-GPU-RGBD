@@ -26,7 +26,6 @@
 #include <opencv2/core/cuda.hpp>
 #include <cuda/mat_norm.hpp>
 #include <thread>
-#include <parallel_for_thread.hpp>
 #include <Utils.hpp>
 
 namespace ORB_SLAM2
@@ -725,8 +724,6 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
 {
     mvuRight = vector<float>(N,-1);
     mvDepth = vector<float>(N,-1);
-    //parallel_for(N, [&](int start, int end){
-    //#pragma omp parallel for
     for(int i=0; i<N; i++)
     {
         const cv::KeyPoint &kp = mvKeys[i];
@@ -743,7 +740,6 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
             mvuRight[i] = kpU.pt.x-mbf/d;
         }
     }
-    //});
 }
 
 cv::Mat Frame::UnprojectStereo(const int &i)

@@ -81,6 +81,7 @@ cuda_add_library(${PROJECT_NAME} SHARED
 )
 
 set(LIBS 
+
 ${OpenCV_LIBS} 
 ${CUDA_LIBRARIES}
 ${EIGEN3_LIBS}
@@ -89,6 +90,7 @@ ${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../build/lib/libORB_SLAM2.so
 -lboost_system
+realsense2
 )
 
 # Csi camera publishing 
@@ -132,7 +134,7 @@ rosbuild_add_executable(real_sense_rgbd
 src/rgbd_real_sense_ros.cc
 )
 
-target_link_libraries(csi
+target_link_libraries(real_sense_rgbd
 ${LIBS}
 )
 

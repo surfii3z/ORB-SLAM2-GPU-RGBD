@@ -800,11 +800,6 @@ bool Tracking::TrackReferenceKeyFrame()
     // Discard outliers
     int nmatchesMap = 0;
     
-    
-    //std::atomic<long long> nm(nmatches);
-    //std::atomic<long long> nmMap(nmatchesMap); 
-
-    //parallel_for(mCurrentFrame.N, [&](int start, int end){
     #pragma omp parallel for reduction(+:nmatchesMap), reduction(-:nmatches)
         for(int i = 0; i < mCurrentFrame.N; ++i) {
             if(mCurrentFrame.mvpMapPoints[i])
@@ -817,39 +812,13 @@ bool Tracking::TrackReferenceKeyFrame()
                     mCurrentFrame.mvbOutlier[i]=false;
                     pMP->mbTrackInView = false;
                     pMP->mnLastFrameSeen = mCurrentFrame.mnId;
-                    nmatches--; //nm.fetch_sub(1, std::memory_order_relaxed);
+                    nmatches--;
                 }
                 else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
-                    nmatchesMap++; //nmMap.fetch_add(1, std::memory_order_relaxed);
+                    nmatchesMap++;
             }
 	}
-    //} ); 
-
-    //nmatches = (int) nm; 
-    //nmatchesMap = (int) nmMap; 
     
-    /*
-    for(int i =0; i<mCurrentFrame.N; i++)
-    {
-        if(mCurrentFrame.mvpMapPoints[i])
-        {
-            if(mCurrentFrame.mvbOutlier[i])
-            {
-                MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
-
-                mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
-                mCurrentFrame.mvbOutlier[i]=false;
-                pMP->mbTrackInView = false;
-                pMP->mnLastFrameSeen = mCurrentFrame.mnId;
-                nmatches--;
-            }
-            else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
-                nmatchesMap++;
-        }
-    }
-    */
-    
-
     SET_CLOCK(refe);
     return nmatchesMap>=10;
     std::cout << "Track reference frame: " << TIME_DIFF(refe,refs) << std::endl;
@@ -871,7 +840,6 @@ void Tracking::UpdateLastFrame()
     // We sort points according to their measured depth by the stereo/RGB-D sensor
     vector<pair<float,int> > vDepthIdx;
     vDepthIdx.reserve(mLastFrame.N);
-    //parallel_for(mLastFrame.N, [&](int start, int end){
     #pragma omp parallel for
     for(int i=0; i<mLastFrame.N;i++)
     {
@@ -881,7 +849,6 @@ void Tracking::UpdateLastFrame()
             vDepthIdx.push_back(make_pair(z,i));
         }
     }
-    //});
 
     if(vDepthIdx.empty())
         return;
@@ -963,9 +930,6 @@ bool Tracking::TrackWithMotionModel()
     // Discard outliers
     int nmatchesMap = 0;
     
-    //std::atomic<long long> nm(nmatches);
-    //std::atomic<long long> nmMap(nmatchesMap); 
-    //parallel_for(mCurrentFrame.N, [&](int start, int end){
     #pragma omp parallel for reduction(+:nmatchesMap), reduction(-:nmatches)
         for(int i = 0; i < mCurrentFrame.N; ++i) {
             if(mCurrentFrame.mvpMapPoints[i])
@@ -978,37 +942,12 @@ bool Tracking::TrackWithMotionModel()
                     mCurrentFrame.mvbOutlier[i]=false;
                     pMP->mbTrackInView = false;
                     pMP->mnLastFrameSeen = mCurrentFrame.mnId;
-		    //nm.fetch_sub(1, std::memory_order_relaxed);
                     nmatches--;
                 }
                 else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
-                    nmatchesMap++; //nmMap.fetch_add(1, std::memory_order_relaxed);
+                    nmatchesMap++;
             }
 	}
-    //} ); 
-    //nmatches = (int) nm; 
-    //nmatchesMap = (int) nmMap; 
-    
-    /*
-    for(int i =0; i<mCurrentFrame.N; i++)
-    {
-        if(mCurrentFrame.mvpMapPoints[i])
-        {
-            if(mCurrentFrame.mvbOutlier[i])
-            {
-                MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
-
-                mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
-                mCurrentFrame.mvbOutlier[i]=false;
-                pMP->mbTrackInView = false;
-                pMP->mnLastFrameSeen = mCurrentFrame.mnId;
-                nmatches--;
-            }
-            else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
-                nmatchesMap++;
-        }
-    }
-    */
 
     if(mbOnlyTracking)
     {
@@ -1034,15 +973,13 @@ bool Tracking::TrackLocalMap()
     SET_CLOCK(searchlocalpoints);
     std::cout << "Search Local Points: " << TIME_DIFF(searchlocalpoints,updatelocalmap) << std::endl;
 
-    // Optimize Pose
+    // Optimize Pose, Check if we already performed the necessary pose optimizations
     if (!didOptimizePose)
         Optimizer::PoseOptimization(&mCurrentFrame);
     SET_CLOCK(poseopt);
     mnMatchesInliers = 0;
 
     // Update MapPoints Statistics
-    //std::atomic<long long> inliers(mnMatchesInliers);
-    //parallel_for(mCurrentFrame.N, [&](int start, int end){
     int inliers = 0;
     #pragma omp parallel for reduction(+:inliers)
     for(int i=0; i<mCurrentFrame.N; i++)
@@ -1055,18 +992,16 @@ bool Tracking::TrackLocalMap()
                 if(!mbOnlyTracking)
                 {
                     if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
-                        inliers++; //inliers.fetch_add(1, std::memory_order_relaxed);
+                        inliers++;
                 }
                 else
-                    inliers++; //inliers.fetch_add(1, std::memory_order_relaxed);
+                    inliers++;
             }
             else if(mSensor==System::STEREO)
                 mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
 
         }
     }
-    //});
-    //mnMatchesInliers = (int) inliers;
     mnMatchesInliers = inliers;
 
     SET_CLOCK(locale);
@@ -1114,24 +1049,17 @@ bool Tracking::NeedNewKeyFrame()
 
     if(mSensor!=System::MONOCULAR)
     {
-	
-	//std::atomic<long long> nontrack(nNonTrackedClose);
-	//std::atomic<long long> ntrack(nTrackedClose);
-	//parallel_for(mCurrentFrame.N, [&](int start, int end){
 	#pragma omp parallel for reduction(+:nTrackedClose,nNonTrackedClose)
         for(int i=0; i<mCurrentFrame.N; i++)
         {
             if(mCurrentFrame.mvDepth[i]>0 && mCurrentFrame.mvDepth[i]<mThDepth)
             {
                 if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
-                    nTrackedClose++; //ntrack.fetch_add(1, std::memory_order_relaxed);
+                    nTrackedClose++;
                 else
-                    nNonTrackedClose++; //nontrack.fetch_add(1, std::memory_order_relaxed);
+                    nNonTrackedClose++;
             }
         }
-	//});
-	//nNonTrackedClose = (int) nontrack;
-	//nTrackedClose = (int) ntrack;
     }
 
     bool bNeedToInsertClose = (nTrackedClose<100) && (nNonTrackedClose>70);
@@ -1200,7 +1128,6 @@ void Tracking::CreateNewKeyFrame()
         vector<pair<float,int> > vDepthIdx;
         vDepthIdx.reserve(mCurrentFrame.N);
 
-	//parallel_for(mCurrentFrame.N, [&](int start, int end){
 	#pragma omp parallel for
         for(int i=0; i<mCurrentFrame.N; i++)
         {
@@ -1210,7 +1137,6 @@ void Tracking::CreateNewKeyFrame()
                 vDepthIdx.push_back(make_pair(z,i));
             }
         }
-	//});
 
         if(!vDepthIdx.empty())
         {
