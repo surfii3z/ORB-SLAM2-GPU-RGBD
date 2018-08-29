@@ -86,6 +86,7 @@ src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
 src/Initializer.cc
 src/Viewer.cc
+src/SGFilter.cc
 src/cuda/Allocator_gpu.cu
 src/cuda/Fast_gpu.cu
 src/cuda/Orb_gpu.cu

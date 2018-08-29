@@ -82,7 +82,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
     //SET_CLOCK(scaleEnd);
-    //std::cout << "Frame set scale info: " << TIME_DIFF(scaleEnd,scaleStart) << std::endl;
+    //PRINT_CLOCK("Frame set scale info", scaleEnd, scaleStart); 
 
     // ORB extraction
     SET_CLOCK(orbStart);
@@ -91,7 +91,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     threadLeft.join();
     threadRight.join();
     SET_CLOCK(orbEnd);
-    std::cout << "Frame ORB extraction: " << TIME_DIFF(orbEnd, orbStart) << std::endl;
+    PRINT_CLOCK("Frame ORB extraction", orbEnd, orbStart); 
 
     if(mvKeys.empty())
         return;
@@ -101,12 +101,12 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     SET_CLOCK(distortStart);
     UndistortKeyPoints();
     SET_CLOCK(distortEnd);
-    std::cout << "Undistort key points: " << TIME_DIFF(distortEnd, distortStart) << std::endl;
+    PRINT_CLOCK("Undistort key points", distortEnd, distortStart); 
 
     SET_CLOCK(sMatchStart);
     ComputeStereoMatches();
     SET_CLOCK(sMatchEnd);
-    std::cout << "Stereo Match Computation: " << TIME_DIFF(sMatchEnd, sMatchStart) << std::endl;
+    PRINT_CLOCK("Stereo Match Computation", sMatchEnd, sMatchStart); 
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
     mvbOutlier = vector<bool>(N,false);
@@ -135,7 +135,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     SET_CLOCK(assignFeaturesStart);
     AssignFeaturesToGrid();
     SET_CLOCK(assignFeaturesEnd);
-    std::cout << "Assign Features: " << TIME_DIFF(assignFeaturesEnd,assignFeaturesStart) << std::endl;
+    PRINT_CLOCK("Assign Features", assignFeaturesEnd, assignFeaturesStart);
 }
 // Constructor for RGB-D cameras.
 Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp,
@@ -160,7 +160,7 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
     SET_CLOCK(orbStart);
     ExtractORB(0,imGray);
     SET_CLOCK(orbEnd);
-    std::cout << "Frame ORB extraction: " << TIME_DIFF(orbEnd, orbStart) << std::endl;
+    PRINT_CLOCK("Frame ORB extraction", orbEnd, orbStart);
 
     N = mvKeys.size();
 
@@ -170,12 +170,12 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
     //SET_CLOCK(distortStart);
     UndistortKeyPoints();
     //SET_CLOCK(distortEnd);
-    //std::cout << "Undistort key points: " << TIME_DIFF(distortEnd, distortStart) << std::endl;
+    //PRINT_CLOCK("Undistort key points", distortEnd, distortStart);
 
     //SET_CLOCK(sMatchStart);
     ComputeStereoFromRGBD(imDepth);
     //SET_CLOCK(sMatchEnd);
-    //std::cout << "RGBD Stereo Match Computation: " << TIME_DIFF(sMatchEnd, sMatchStart) << std::endl;
+    //PRINT_CLOCK("RGBD Stereo Match Computation", sMatchEnd, sMatchStart);
 
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
@@ -228,7 +228,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp,
     SET_CLOCK(mono);
     ExtractORB(0,imGray);
     SET_CLOCK(mono2);
-    std::cout << "Mono ORB extract: " << TIME_DIFF(mono2,mono) << std::endl;
+    PRINT_CLOCK("Mono ORB Extract", mono2, mono);
 
     N = mvKeys.size();
 
@@ -616,8 +616,6 @@ void Frame::ComputeStereoMatches()
             //IL = IL - IL.at<float>(w,w) *cv::Mat::ones(IL.rows,IL.cols,CV_32F);
 	    //cout << IL.at<float>(w,w) << endl;
 
-	        //SET_CLOCK(t1);
-	        //cout << "Subtract time: " << TIME_DIFF(t1, t0) << endl;
 
             int bestDist = INT_MAX;
             int bestincR = 0;

@@ -456,7 +456,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     pFrame->SetPose(pose);
 
     SET_CLOCK(popte);
-    std::cout << "Pose Optimization: " << TIME_DIFF(popte,popt) << std::endl;
+    PRINT_CLOCK("Pose Optimization", popte, popt);
     return nInitialCorrespondences-nBad;
 }
 

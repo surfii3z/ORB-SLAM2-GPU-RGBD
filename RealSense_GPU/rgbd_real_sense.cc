@@ -43,6 +43,7 @@ Usage:
 #include<System.h>
 #include <Utils.hpp>
 #include<Converter.h>
+#include<SGFilter.h>
 
 #include <librealsense2/rs.hpp>
 #include <cv-helpers.hpp>
@@ -50,6 +51,9 @@ Usage:
 #include <stdio.h>
 #include <stdlib.h> 
 #include <signal.h> 
+
+#define POLY_ORDER 2
+#define FILTER_SIZE 5
 
 using namespace std;
 
@@ -89,7 +93,7 @@ int main(int argc, char **argv)
     if (argc > 4) WIDTH = std::atoi(argv[4]); else WIDTH = 640;  //1280
     if (argc > 5) HEIGHT = std::atoi(argv[5]); else HEIGHT = 480; //720 
     if (argc > 6) FPS = std::atoi(argv[6]); else FPS = 30;
-    if (argc > 7) TIME = std::atof(argv[7]); else TIME = 30.0;
+    if (argc > 7) TIME = std::atof(argv[7]); else TIME = 30000.0;
 
     //Contruct a pipeline which abstracts the device
     rs2::pipeline pipe;
@@ -151,9 +155,13 @@ int main(int argc, char **argv)
         auto processed = align.process(frames);
     }
 
+    // Initialize Savitzky-Golay Filters
+    ORB_SLAM2::SGFilter xFilter(POLY_ORDER, FILTER_SIZE);
+    ORB_SLAM2::SGFilter yFilter(POLY_ORDER, FILTER_SIZE);
+    ORB_SLAM2::SGFilter zFilter(POLY_ORDER, FILTER_SIZE);
+
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,bUseViz);
-
 
     cout << endl << "-------" << endl;
     cout << "Start processing sequence ..." << endl;
@@ -213,7 +221,7 @@ int main(int argc, char **argv)
       }
 
       SET_CLOCK(imfeedEnd);
-      std::cout << "Align image feed: " << TIME_DIFF(imfeedEnd,t1) << std::endl;
+      PRINT_CLOCK("Align image feed", imfeedEnd, t1);
 
       double tframe = TIME_DIFF(t1, t0);
       if (tframe > TIME) {
@@ -223,6 +231,22 @@ int main(int argc, char **argv)
       PUSH_RANGE("Track image", 4);
       // Pass the image to the SLAM system
       cv::Mat Tcw = SLAM.TrackRGBD(infared, depth, tframe);
+      //float *vel = SLAM.getCameraVelocity();
+      //std::cout << "x: " << vel[0] << " y: " << vel[1] << " z: " << vel[2] << std::endl;
+
+      cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t(); // Rotation information
+      cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3); // translation information
+
+      xFilter.update((float) tframe,twc.at<float>(0,0));
+      yFilter.update((float) tframe,twc.at<float>(0,1));
+      zFilter.update((float) tframe,twc.at<float>(0,2));
+
+      static float vel[3];
+      vel[0] = xFilter.data_.yDot;
+      vel[1] = yFilter.data_.yDot;
+      vel[2] = zFilter.data_.yDot;
+      std::cout << "x: " << vel[0] << " y: " << vel[1] << " z: " << vel[2] << std::endl;
+
       POP_RANGE;
       SET_CLOCK(t2);
 
@@ -234,28 +258,7 @@ int main(int argc, char **argv)
       //cerr << "Frame " << frameNumber << " : " << tframe << " " << trackTime << " " << 10 / tsum << "\n";
       ++frameNumber;
 
-      // Get pose information, publish to ROS node (optional, see example in ROS file for more info)
-      if (!Tcw == false)
-      {
-          //geometry_msgs::PoseStamped pose;
-          //pose.header.stamp = fTime;
-          //pose.header.frame_id ="map";
 
-          cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t(); // Rotation information
-          cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3); // translation information
-          vector<float> q = ORB_SLAM2::Converter::toQuaternion(Rwc);
-
-          //tf::Transform new_transform;
-          //new_transform.setOrigin(tf::Vector3(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2)));
-
-          //tf::Quaternion quaternion(q[0], q[1], q[2], q[3]);
-          //new_transform.setRotation(quaternion);
-
-          //tf::poseTFToMsg(new_transform, pose.pose);
-          //pose_pub.publish(pose);
-	  //std::cout << "Position: x: " << twc.at<float>(0, 0) << ", y: " << twc.at<float>(0, 1) << ", z: " << twc.at<float>(0, 2) << std::endl;
-	  //std::cout << "Quaternion: " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << std::endl;
-      }
 
       //Handle Control+C on stop function 
       if (flag) {

@@ -15,7 +15,8 @@
 #include <cstdlib> 
 */
 
-#define UTIL_VERBOSE 1
+//Change from 0 to 1 to enable clock timing of various functions 
+#define UTIL_VERBOSE 0
 
 #define SET_CLOCK(t0) \
         std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
@@ -24,7 +25,10 @@
         (std::chrono::duration_cast<std::chrono::duration<double>>((t1) - (t0)).count())
 
 #define PRINT_CLOCK(msg, t1, t0) \
-        std::cerr << msg << "  " << TIME_DIFF(t1, t0) << endl;
+({ \
+	if (UTIL_VERBOSE) \
+            std::cerr << msg << "  " << TIME_DIFF(t1, t0) << endl; \
+})
 
 #ifdef USE_NVTX
 #include "nvToolsExt.h"

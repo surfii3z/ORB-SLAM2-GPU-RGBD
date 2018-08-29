@@ -32,6 +32,7 @@
 
 #include"Optimizer.h"
 #include"PnPsolver.h"
+#include"SGFilter.h"
 
 #include<iostream>
 #include<atomic>
@@ -53,6 +54,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
+
     // Load camera parameters from settings file
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
     float fx = fSettings["Camera.fx"];
@@ -149,7 +151,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
         else
             mDepthMapFactor = 1.0f/mDepthMapFactor;
     }
-
+    
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -205,7 +207,7 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
     SET_CLOCK(ts);
     Track();
     SET_CLOCK(te);
-    std::cout << "Track time: " << TIME_DIFF(te,ts) << std::endl;
+    PRINT_CLOCK("Track time", te, ts); 
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -239,7 +241,7 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     SET_CLOCK(ts);
     Track();
     SET_CLOCK(te);
-    std::cout << "Track time: " << TIME_DIFF(te,ts) << std::endl;
+    PRINT_CLOCK("Track time", te, ts); 
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -272,7 +274,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     SET_CLOCK(ts);
     Track();
     SET_CLOCK(te);
-    std::cout << "Track time: " << TIME_DIFF(te,ts) << std::endl;
+    PRINT_CLOCK("Track time", te, ts); 
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -484,6 +486,10 @@ void Tracking::Track()
             }
         }
 
+	// Compute the true linear velocity of the camera with respect to the world 
+	// TODO this should change with respect to whether Tracking is lost or not 
+
+
         // Reset if the camera get lost soon after initialization
         if(mState==LOST)
         {
@@ -493,7 +499,13 @@ void Tracking::Track()
                 mpSystem->Reset();
                 return;
             }
-        }
+	    // TODO Track the velocity using optical flow 
+	
+        } else 
+	{
+	    // TODO Track the velocity using local motion model and optical flow 
+	    //calcVelocityFromPose();
+	}
 
         if(!mCurrentFrame.mpReferenceKF)
             mCurrentFrame.mpReferenceKF = mpReferenceKF;
@@ -820,8 +832,8 @@ bool Tracking::TrackReferenceKeyFrame()
 	}
     
     SET_CLOCK(refe);
+    PRINT_CLOCK("Track reference frame", refe, refs); 
     return nmatchesMap>=10;
-    std::cout << "Track reference frame: " << TIME_DIFF(refe,refs) << std::endl;
 }
 
 
@@ -956,7 +968,7 @@ bool Tracking::TrackWithMotionModel()
     }
 
     SET_CLOCK(mote);
-    std::cout << "Track Motion Model: " << TIME_DIFF(mote,mots) << std::endl;
+    PRINT_CLOCK("Track Motion Model", mote, mots); 
     return nmatchesMap>=10;
 }
 
@@ -967,11 +979,11 @@ bool Tracking::TrackLocalMap()
     SET_CLOCK(local);
     UpdateLocalMap();
     SET_CLOCK(updatelocalmap);
-    //std::cout << "Update Local Map: " << TIME_DIFF(updatelocalmap,local) << std::endl;
+    //PRINT_CLOCK("Update Local Map", updatelocalmap, local); 
 
     SearchLocalPoints();
     SET_CLOCK(searchlocalpoints);
-    std::cout << "Search Local Points: " << TIME_DIFF(searchlocalpoints,updatelocalmap) << std::endl;
+    PRINT_CLOCK("Search Local Points", searchlocalpoints, updatelocalmap); 
 
     // Optimize Pose, Check if we already performed the necessary pose optimizations
     if (!didOptimizePose)
@@ -1005,7 +1017,7 @@ bool Tracking::TrackLocalMap()
     mnMatchesInliers = inliers;
 
     SET_CLOCK(locale);
-    //std::cout << "Find Inliers: " << TIME_DIFF(locale,poseopt) << std::endl;
+    // PRINT_CLOCK("Find Inliers: ", locale, poseopt); 
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
@@ -1189,7 +1201,7 @@ void Tracking::CreateNewKeyFrame()
     mnLastKeyFrameId = mCurrentFrame.mnId;
     mpLastKeyFrame = pKF;
     SET_CLOCK(createDone);
-    std::cout << "Create New Keyframe: " << TIME_DIFF(createDone,create) << std::endl;
+    PRINT_CLOCK("Create New Keyframe", createDone, create); 
 }
 
 void Tracking::SearchLocalPoints()
@@ -1646,7 +1658,6 @@ void Tracking::InformOnlyTracking(const bool &flag)
 {
     mbOnlyTracking = flag;
 }
-
 
 
 } //namespace ORB_SLAM
