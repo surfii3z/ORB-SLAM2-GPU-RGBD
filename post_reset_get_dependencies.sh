@@ -13,9 +13,13 @@ cmake ..
 make -j8
 sudo make install
 
-# Install OpenCV with CUDA, OpenGL
+# Install OpenCV 3.4.1 with CUDA, OpenGL
+# Might need to reinstall to 
 sudo apt-get install gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base
 cd ~/SLAM/buildOpenCVTX2
+# Make sure that git fast forwarding works correctly, no password entry needed
+git config user.name "Connor Soohoo"
+git config user.email "connorsoohoo@gmail.com"
 ./buildOpenCV.sh -s ~/SLAM
 cd ~/SLAM/opencv
 cd build
@@ -50,7 +54,7 @@ cd ..
 chmod +x ./installLibrealsense.sh
 sudo ./installLibrealsense.sh
 
-
+sudo ln -s /usr/local/cuda-8.0/lib64/libnvToolsExt.so /usr/lib/libnvToolsExt.so
 cd ~/SLAM/ORB-SLAM2-GPU2016-final
 chmod +x build.sh
 sudo ./build.sh
