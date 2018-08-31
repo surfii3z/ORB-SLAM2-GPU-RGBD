@@ -233,7 +233,7 @@ int main(int argc, char **argv)
       cv::Mat Tcw = SLAM.TrackRGBD(infared, depth, tframe);
       //float *vel = SLAM.getCameraVelocity();
       //std::cout << "x: " << vel[0] << " y: " << vel[1] << " z: " << vel[2] << std::endl;
-
+      /*
       cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t(); // Rotation information
       cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3); // translation information
 
@@ -246,6 +246,7 @@ int main(int argc, char **argv)
       vel[1] = yFilter.data_.yDot;
       vel[2] = zFilter.data_.yDot;
       std::cout << "x: " << vel[0] << " y: " << vel[1] << " z: " << vel[2] << std::endl;
+      */
 
       POP_RANGE;
       SET_CLOCK(t2);

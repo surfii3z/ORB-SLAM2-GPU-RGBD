@@ -41,26 +41,38 @@ namespace ORB_SLAM2
         f_(current_line_) = new_val;
         t_(current_line_) = new_time_float;
 
-        // Push one slot forward 
-        for (uint32_t j = 0; j < poly_order_ + 1; j++) {           
-            A_(current_line_,j) = powFast(new_time_float, j);
+        uint32_t line_np1 = current_line_;
+        line_np1++;
+        line_np1 = line_np1 % filter_size_;
+
+        float tCenter = 0.5F*(new_time_float + t_(line_np1));
+
+        // Push one slot forward
+        for (uint32_t i = 0; i < filter_size_; i++)
+        {
+            for (uint32_t j = 0; j < poly_order_ + 1; j++) {           
+                A_(i,j) = powFast(t_(i)-tCenter, j);
+            }
         }
 
         if(filter_iter_ > filter_size_) {
             // Update the matrix and solve the least-squares prolem 
-            c_ = (A_.transpose() * A_).ldlt().solve(A_.transpose() * f_);     
+            // c_ = (A_.transpose() * A_).ldlt().solve(A_.transpose() * f_);   
+            c_ = A_.fullPivHouseholderQr().solve(f_);
+
             // Reinitialize data 
             data_.yRaw = new_val;
             data_.y = 0.0f;
             data_.yDot = 0.0f;
 
+            float tEnd = new_time_float-tCenter;
             // Update data filtered
             for (unsigned int i = 0; i <= poly_order_; i++) {
-                data_.y = data_.y + c_(i) * powFast(new_time_float, i);
+                data_.y += c_(i) * powFast(tEnd, i);
             }
             // Update data derivative
             for (unsigned int i = 1; i <= poly_order_; i++) {
-                data_.yDot += i * c_(i) * powFast(new_time_float, i - 1);
+                data_.yDot += i * c_(i) * powFast(tEnd, i - 1);
             }
         }
 
