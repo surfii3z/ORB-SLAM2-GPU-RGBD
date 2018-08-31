@@ -1,4 +1,55 @@
-# ORB-SLAM2-GPU
+# ORB-SLAM2-GPU-RGBD
+This is an optimized version of the ORB SLAM2 library and yunchih's monocular GPU acceleration to include RGB-D vision.
+This optimization runs in real time on the Jetson TX2. At max clock rate we achieve around **18-20 fps** on average.
+
+## Usage
+
+We use the Intel RealSense D435 camera to supply RGB-D vision. Refer to the installation on how to install the camera drivers and library onto the TX2.
+
+```
+./build/rgbd_real_sense Vocabulary/ORBvoc.txt RealSense_GPU/rgbd_real_sense.yaml
+```
+
+There are also files to run monocular and stereo vision.
+
+```
+./build/mono_real_sense Vocabulary/ORBvoc.txt RealSense_GPU/mono_real_sense.yaml
+```
+```
+./build/stereo_real_sense Vocabulary/ORBvoc.txt RealSense_GPU/stereo_real_sense.yaml
+```
+
+
+To enable verbose commands, like clocking times of bottleneck hotspots or printing velocities, check the Utils.hpp file in include for the verbose flag.
+
+```c++
+//Change from 0 to 1 to enable clock timing of various functions
+#define UTIL_VERBOSE 0
+```
+
+
+## Installation
+
+Run the following two scripts to install the dependencies.
+
+```
+chmod +x get_dependencies.sh
+./get_dependencies.sh
+chmod +x post_reset_get_dependencies.sh
+./post_reset_get_dependencies.sh
+```
+
+The main issue with the install is that apt says that it is unable to lock the administration directory.
+This usually happens if 'Update Manager' is running in parallel for any update check or install as the update manager process places its own lock.
+The best course of action is just to wait a couple minutes and then try again, and then reboot and try again. consult one of these [solutions](https://askubuntu.com/questions/15433/unable-to-lock-the-administration-directory-var-lib-dpkg-is-another-process).
+
+These scripts install the dependencies successfully with the exception of librealsense, whose installation depends on the environment. Consult the JetsonHacks repo for more thorough installation details of the Real Sense library and camera drivers.
+Folks in the AMBER Lab only need to use the buildLibrealsense2TX library in the Dropbox, which this script defaults to and applies the necessary patches to the kernel in the previously run install script. Otherwise, switch the comments in the script when installing the librealsense library and drivers.
+Note you will have to patch the kernel to be able to run the RealSense camera on the TX2.
+Moreover, the Real Sense cameras prefer a USB 3.1 connection to supply steady RGB-D video, so be sure the connections use this type of connector.
+
+-------
+## ORB-SLAM2-GPU
 This is a fork of Raul Mur-Artal's [ORB-SLAM2](https://github.com/raulmur/ORB_SLAM2), on which we rewrite hot paths with CUDA. Our optimization enables us to run the algorithm in **real time** on a Nvidia's Jetson TX1.
 
 - [Project presentation website](http://yunchih.github.io/ORB-SLAM2-GPU2016-final/)
@@ -12,19 +63,19 @@ ORB-SLAM2 is a real-time SLAM library for **Monocular**, **Stereo** and **RGB-D*
 
 #####Videos showing ORB-SLAM2:
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=dF7_I2Lin54
-" target="_blank"><img src="http://img.youtube.com/vi/dF7_I2Lin54/0.jpg" 
+" target="_blank"><img src="http://img.youtube.com/vi/dF7_I2Lin54/0.jpg"
 alt="Tsukuba Dataset" width="240" height="180" border="10" /></a>
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=51NQvg5n-FE
-" target="_blank"><img src="http://img.youtube.com/vi/51NQvg5n-FE/0.jpg" 
+" target="_blank"><img src="http://img.youtube.com/vi/51NQvg5n-FE/0.jpg"
 alt="KITTI Dataset" width="240" height="180" border="10" /></a>
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=LnbAI-o7YHk
-" target="_blank"><img src="http://img.youtube.com/vi/LnbAI-o7YHk/0.jpg" 
+" target="_blank"><img src="http://img.youtube.com/vi/LnbAI-o7YHk/0.jpg"
 alt="TUM RGBD Dataset" width="240" height="180" border="10" /></a>
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=MUyNOEICrf8
-" target="_blank"><img src="http://img.youtube.com/vi/MUyNOEICrf8/0.jpg" 
+" target="_blank"><img src="http://img.youtube.com/vi/MUyNOEICrf8/0.jpg"
 alt="EuRoC Dataset (V1_02, V1_03)" width="240" height="180" border="10" /></a>
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=xXt90wZejwk
-" target="_blank"><img src="http://img.youtube.com/vi/xXt90wZejwk/0.jpg" 
+" target="_blank"><img src="http://img.youtube.com/vi/xXt90wZejwk/0.jpg"
 alt="EuRoC Dataset (V1_02, V1_03)" width="240" height="180" border="10" /></a>
 
 **Notice for ORB-SLAM Monocular users:**
@@ -112,9 +163,9 @@ This will create **libORB_SLAM2.so**  at *lib* folder and the executables **mono
 
 ## KITTI Dataset  
 
-1. Download the dataset (grayscale images) from http://www.cvlibs.net/datasets/kitti/eval_odometry.php 
+1. Download the dataset (grayscale images) from http://www.cvlibs.net/datasets/kitti/eval_odometry.php
 
-2. Execute the following command. Change `KITTIX.yaml`by KITTI00-02.yaml, KITTI03.yaml or KITTI04-12.yaml for sequence 0 to 2, 3, and 4 to 12 respectively. Change `PATH_TO_DATASET_FOLDER` to the uncompressed dataset folder. Change `SEQUENCE_NUMBER` to 00, 01, 02,.., 11. 
+2. Execute the following command. Change `KITTIX.yaml`by KITTI00-02.yaml, KITTI03.yaml or KITTI04-12.yaml for sequence 0 to 2, 3, and 4 to 12 respectively. Change `PATH_TO_DATASET_FOLDER` to the uncompressed dataset folder. Change `SEQUENCE_NUMBER` to 00, 01, 02,.., 11.
 ```
 ./Examples/Monocular/mono_kitti Vocabulary/ORBvoc.txt Examples/Monocular/KITTIX.yaml PATH_TO_DATASET_FOLDER/dataset/sequences/SEQUENCE_NUMBER
 ```
@@ -123,9 +174,9 @@ This will create **libORB_SLAM2.so**  at *lib* folder and the executables **mono
 
 ## KITTI Dataset
 
-1. Download the dataset (grayscale images) from http://www.cvlibs.net/datasets/kitti/eval_odometry.php 
+1. Download the dataset (grayscale images) from http://www.cvlibs.net/datasets/kitti/eval_odometry.php
 
-2. Execute the following command. Change `KITTIX.yaml`to KITTI00-02.yaml, KITTI03.yaml or KITTI04-12.yaml for sequence 0 to 2, 3, and 4 to 12 respectively. Change `PATH_TO_DATASET_FOLDER` to the uncompressed dataset folder. Change `SEQUENCE_NUMBER` to 00, 01, 02,.., 11. 
+2. Execute the following command. Change `KITTIX.yaml`to KITTI00-02.yaml, KITTI03.yaml or KITTI04-12.yaml for sequence 0 to 2, 3, and 4 to 12 respectively. Change `PATH_TO_DATASET_FOLDER` to the uncompressed dataset folder. Change `SEQUENCE_NUMBER` to 00, 01, 02,.., 11.
 ```
 ./Examples/Stereo/stereo_kitti Vocabulary/ORBvoc.txt Examples/Stereo/KITTIX.yaml PATH_TO_DATASET_FOLDER/dataset/sequences/SEQUENCE_NUMBER
 ```
@@ -156,7 +207,7 @@ This will create **libORB_SLAM2.so**  at *lib* folder and the executables **mono
   ```
   export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:PATH/ORB_SLAM2/Examples/ROS
   ```
-  
+
 2. Go to *Examples/ROS/ORB_SLAM2* folder and execute:
 
   ```
@@ -165,34 +216,34 @@ This will create **libORB_SLAM2.so**  at *lib* folder and the executables **mono
   cmake .. -DROS_BUILD_TYPE=Release
   make -j
   ```
-  
+
 ### Running Monocular Node
 For a monocular input from topic `/camera/image_raw` run node ORB_SLAM2/Mono. You will need to provide the vocabulary file and a settings file. See the monocular examples above.
 
   ```
   rosrun ORB_SLAM2 Mono PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
   ```
-  
+
 ### Running Stereo Node
 For a stereo input from topic `/camera/left/image_raw` and `/camera/right/image_raw` run node ORB_SLAM2/Stereo. You will need to provide the vocabulary file and a settings file. If you **provide rectification matrices** (see Examples/Stereo/EuRoC.yaml example), the node will recitify the images online, **otherwise images must be pre-rectified**.
 
   ```
   rosrun ORB_SLAM2 Stereo PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE ONLINE_RECTIFICATION
   ```
-  
+
 **Example**: Download a rosbag (e.g. V1_01_easy.bag) from the EuRoC dataset (http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets). Open 3 tabs on the terminal and run the following command at each tab:
   ```
   roscore
   ```
-  
+
   ```
   rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/EuRoC.yaml true
   ```
-  
+
   ```
   rosbag play --pause V1_01_easy.bag /cam0/image_raw:=/camera/left/image_raw /cam1/image_raw:=/camera/right/image_raw
   ```
-  
+
 Once ORB-SLAM2 has loaded the vocabulary, press space in the rosbag tab. Enjoy!. Note: a powerful computer is required to run the most exigent sequences of this dataset.
 
 ### Running RGB_D Node
@@ -201,7 +252,7 @@ For an RGB-D input from topics `/camera/rgb/image_raw` and `/camera/depth_regist
   ```
   rosrun ORB_SLAM2 RGBD PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
   ```
-  
+
 #8. Processing your own sequences
 You will need to create a settings file with the calibration of your camera. See the settings file provided for the TUM and KITTI datasets for monocular, stereo and RGB-D cameras. We use the calibration model of OpenCV. See the examples to learn how to create a program that makes use of the ORB-SLAM2 library and how to pass images to the SLAM system. Stereo input must be synchronized and rectified. RGB-D input must be synchronized and depth registered.
 
@@ -212,5 +263,4 @@ You can change between the *SLAM* and *Localization mode* using the GUI of the m
 This is the default mode. The system runs in parallal three threads: Tracking, Local Mapping and Loop Closing. The system localizes the camera, builds new map and tries to close loops.
 
 ### Localization Mode
-This mode can be used when you have a good map of your working area. In this mode the Local Mapping and Loop Closing are deactivated. The system localizes the camera in the map (which is no longer updated), using relocalization if needed. 
-
+This mode can be used when you have a good map of your working area. In this mode the Local Mapping and Loop Closing are deactivated. The system localizes the camera in the map (which is no longer updated), using relocalization if needed.
