@@ -30,7 +30,7 @@ namespace ORB_SLAM2
 
 Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath):
     mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking),
-    mbFinishRequested(false), mbFinished(true), mbStopped(false), mbStopRequested(false)
+    mbFinishRequested(false), mbFinished(true), mbPaused(false), mbStopped(false), mbStopRequested(false)
 {
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
 
@@ -57,6 +57,7 @@ void Viewer::Run()
 {
 
     mbFinished = false;
+    mbPaused = false;
 
     pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1024,768);
 
@@ -73,6 +74,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
     pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
+    pangolin::Var<bool> menuPauseResume("menu.Pause/Resume",false,false);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
 
     // Define Camera Render Object (for view / scene browsing)
@@ -156,6 +158,18 @@ void Viewer::Run()
             menuFollowCamera = true;
             mpSystem->Reset();
             menuReset = false;
+            menuPauseResume = false;
+        }
+
+        if (menuPauseResume && !isPaused())
+        {
+            mpSystem->Pause();
+            SetPause();
+        }
+        else if (!menuPauseResume && isPaused())
+        {
+            mpSystem->Resume();
+            UnsetPause();
         }
 
         if(Stop())
@@ -198,6 +212,24 @@ bool Viewer::isFinished()
 {
     unique_lock<mutex> lock(mMutexFinish);
     return mbFinished;
+}
+
+bool Viewer::isPaused()
+{
+    unique_lock<mutex> lock(mMutexPause);
+    return mbPaused;
+}
+
+void Viewer::SetPause()
+{
+    unique_lock<mutex> lock(mMutexPause);
+    mbPaused = true;
+}
+
+void Viewer::UnsetPause()
+{
+    unique_lock<mutex> lock(mMutexPause);
+    mbPaused = false;
 }
 
 void Viewer::RequestStop()

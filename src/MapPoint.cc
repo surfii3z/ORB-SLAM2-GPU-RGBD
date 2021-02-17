@@ -384,7 +384,7 @@ float MapPoint::GetMaxDistanceInvariance()
     return 1.2f*mfMaxDistance;
 }
 
-int MapPoint::PredictScale(const float &currentDist, const float &logScaleFactor)
+int MapPoint::PredictScale(const float &currentDist, const float &logScaleFactor, const int mnScaleLevel)
 {
     float ratio;
     {
@@ -392,7 +392,8 @@ int MapPoint::PredictScale(const float &currentDist, const float &logScaleFactor
         ratio = mfMaxDistance/currentDist;
     }
 
-    return ceil(log(ratio)/logScaleFactor);
+    int nScale = ceil(log(ratio)/logScaleFactor);
+    return max(0, min(nScale, mnScaleLevel-1));
 }
 
 int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)

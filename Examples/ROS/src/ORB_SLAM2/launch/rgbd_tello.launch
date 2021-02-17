@@ -1,0 +1,8 @@
+<launch>
+
+  <!-- ORB_SLAM2 RGBD -->
+  <node pkg="orb_slam2" type="RGBD" name="rgbd" output="screen" 
+        args="$(find orb_slam2)../../../../Vocabulary/ORBvoc.bin $(find orb_slam2)../../../../cam_configs/rgbd_tello.yaml">
+  </node>
+
+</launch>

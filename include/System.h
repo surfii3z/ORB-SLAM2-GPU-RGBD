@@ -39,6 +39,8 @@
 #include <Utils.hpp>
 #include <unistd.h>
 
+#include<condition_variable>
+
 namespace ORB_SLAM2
 {
 
@@ -84,6 +86,11 @@ public:
     void ActivateLocalizationMode();
     // This resumes local mapping thread and performs SLAM again.
     void DeactivateLocalizationMode();
+
+    // Pause and resume mechanism 
+    void Pause();
+
+    void Resume();
 
     // Reset the system (clear map)
     void Reset();
@@ -150,6 +157,11 @@ private:
     std::thread* mptLocalMapping;
     std::thread* mptLoopClosing;
     std::thread* mptViewer;
+
+    // Pause flag
+    std::mutex mMutexPause;
+    condition_variable mCvResume;
+    bool mbPause;
 
     // Reset flag
     std::mutex mMutexReset;

@@ -26,14 +26,17 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 
-
+bool has_suffix(const std::string &str, const std::string &suffix) {
+  std::size_t index = str.find(suffix, str.size() - suffix.size());
+  return (index != std::string::npos);
+}
 
 namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const bool bUseViewer)
-  : mSensor(sensor), mbReset(false), mbActivateLocalizationMode(false)
+  : mSensor(sensor), mbPause(false), mbReset(false), mbActivateLocalizationMode(false)
   , mbDeactivateLocalizationMode(false)
 {
     // Output welcome message
@@ -64,7 +67,12 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
     mpVocabulary = new ORBVocabulary();
-    bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    bool bVocLoad = false;
+    if (has_suffix(strVocFile, ".txt"))
+	  bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+	else
+	  bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+
     if(!bVocLoad)
     {
         cerr << "Wrong path to vocabulary. " << endl;
@@ -147,6 +155,16 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
         }
     }
 
+    // Check pause
+    {
+    unique_lock<mutex> lock(mMutexPause);
+    if(mbPause)
+    {
+        mCvResume.wait(lock);
+        mbPause = false;
+    }
+    }
+
     // Check reset
     {
     unique_lock<mutex> lock(mMutexReset);
@@ -190,6 +208,16 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
             mpLocalMapper->Release();
             mbDeactivateLocalizationMode = false;
         }
+    }
+
+    // Check pause
+    {
+    unique_lock<mutex> lock(mMutexPause);
+    if(mbPause)
+    {
+        mCvResume.wait(lock);
+        mbPause = false;
+    }
     }
 
     // Check reset
@@ -237,6 +265,16 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
         }
     }
 
+    // Check pause
+    {
+    unique_lock<mutex> lock(mMutexPause);
+    if(mbPause)
+    {
+        mCvResume.wait(lock);
+        mbPause = false;
+    }
+    }
+
     // Check reset
     {
     unique_lock<mutex> lock(mMutexReset);
@@ -261,6 +299,20 @@ void System::DeactivateLocalizationMode()
 {
     unique_lock<mutex> lock(mMutexMode);
     mbDeactivateLocalizationMode = true;
+}
+
+void System::Pause()
+{
+    unique_lock<mutex> lock(mMutexPause);
+    mbPause = true;
+}
+
+void System::Resume()
+{
+    unique_lock<mutex> lock(mMutexPause);
+    mbPause = false;
+    mCvResume.notify_one();
+
 }
 
 void System::Reset()

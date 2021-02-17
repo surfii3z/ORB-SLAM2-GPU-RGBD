@@ -24,7 +24,10 @@ set(SRCS_DUTILS
   DUtils/Random.cpp
   DUtils/Timestamp.cpp)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED
+  NO_MODULE 
+  PATHS /usr/local
+  NO_DEFAULT_PATH) #make sure not doesn't link to ROS OpenCV version
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
