@@ -1,3 +1,34 @@
+## Feature note
+- [ ] ROS publish odometry message: [raulmur/ORB_SLAM2/PR#21](https://github.com/raulmur/ORB_SLAM2/pull/21)
+- [ ] ROS build with catkin build: [raulmur/ORB_SLAM2/PR#2](https://github.com/raulmur/ORB_SLAM2/pull/2)
+- [ ] GPU accelerated: [connorsoohoo/ORB-SLAM2-GPU-RGBD](https://github.com/connorsoohoo/ORB-SLAM2-GPU-RGBD)
+- [ ] Binary version of vocab:  [raulmur/ORB_SLAM2/PR#692](https://github.com/raulmur/ORB_SLAM2/pull/692)
+- [ ] Pause/ Resume mapping: [raulmur/ORB_SLAM2/PR#587](https://github.com/raulmur/ORB_SLAM2/pull/587)
+- [ ] Save/ load map: [raulmur/ORB_SLAM2/PR#381](https://github.com/raulmur/ORB_SLAM2/pull/381)
+
+## Installation
+1) Install cuda-enable OpenCV. Tested with `OpenCV 3.4.11` and `CUDA 10.1`
+    - [Installing Multiple CUDA & cuDNN Versions in Ubuntu](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
+    - [Specify custom build OpenCV version with ROS project](https://answers.ros.org/question/242376/having-trouble-using-cuda-enabled-opencv-with-kinetic/)
+```
+# In summary, in CMakeList.txt just change from  find_package(OpenCV) to the following
+
+find_package(OpenCV REQUIRED
+    NO_MODULE # should be optional, tells CMake to use config mode
+    PATHS /usr/local # look here
+    NO_DEFAULT_PATH) # and don't look anywhere else
+```
+2) Compile vision_opencv from source
+```bash
+ cd /path/to/ROS/src
+ git clone https://github.com/ros-perception/vision_opencv
+ cd vision_opencv
+ git checkout melodic
+ # change CMakeList.txt as in 1)
+ cd /path/to/ROS
+ catkin build
+```
+------- Original Readme from connorsoohoo -------
 # ORB-SLAM2-GPU-RGBD
 This is an optimized version of the ORB SLAM2 library and yunchih's monocular GPU acceleration to include RGB-D vision.
 This optimization runs in real time on the Jetson TX2. At max clock rate we achieve around **18-20 fps** on average.
