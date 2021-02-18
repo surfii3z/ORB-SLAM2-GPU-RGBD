@@ -48,9 +48,9 @@ message(STATUS ${CMAKE_CUDA_COMPILER})
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 find_package(OpenCV REQUIRED
-NO_MODULE 
-PATHS /usr/local
-NO_DEFAULT_PATH) #make sure not doesn't link to ROS OpenCV version
+   NO_MODULE 
+   PATHS /usr/local
+   NO_DEFAULT_PATH) #make sure not doesn't link to ROS OpenCV version
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
@@ -108,6 +108,13 @@ nvToolsExt
 -lboost_system
 )
 
+message(STATUS "Compile With map save/load function")
+find_library(BOOST_SERIALIZATION boost_serialization)
+if (NOT BOOST_SERIALIZATION)
+    message(FATAL_ERROR "Can't find libboost_serialization")
+endif()
+target_link_libraries(${PROJECT_NAME} ${BOOST_SERIALIZATION})
+
 # Build examples
 if(NO_EXAMPLES)
 message(STATUS "Don't build examples")
@@ -136,4 +143,4 @@ target_link_libraries(bin_vocabulary ${PROJECT_NAME})
 endif() # Build Examples
 
 unset(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-add_subdirectory(gpu)
+# add_subdirectory(gpu)

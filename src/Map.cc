@@ -25,7 +25,7 @@
 namespace ORB_SLAM2
 {
 
-Map::Map():mnMaxKFid(0)
+Map::Map():mnMaxKFid(0), mnBigChangeIdx(0)
 {
 }
 
@@ -65,6 +65,18 @@ void Map::SetReferenceMapPoints(const vector<MapPoint *> &vpMPs)
 {
     unique_lock<mutex> lock(mMutexMap);
     mvpReferenceMapPoints = vpMPs;
+}
+
+void Map::InformNewBigChange()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mnBigChangeIdx++;
+}
+
+int Map::GetLastBigChangeIdx()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mnBigChangeIdx;
 }
 
 vector<KeyFrame*> Map::GetAllKeyFrames()
@@ -117,5 +129,18 @@ void Map::clear()
     mvpReferenceMapPoints.clear();
     mvpKeyFrameOrigins.clear();
 }
+
+template<class Archive>
+void Map::serialize(Archive &ar, const unsigned int version)
+{
+    // don't save mutex
+    ar & mspMapPoints;
+    ar & mvpKeyFrameOrigins;
+    ar & mspKeyFrames;
+    ar & mvpReferenceMapPoints;
+    ar & mnMaxKFid & mnBigChangeIdx;
+}
+template void Map::serialize(boost::archive::binary_iarchive&, const unsigned int);
+template void Map::serialize(boost::archive::binary_oarchive&, const unsigned int);
 
 } //namespace ORB_SLAM
