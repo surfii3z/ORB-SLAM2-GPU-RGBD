@@ -104,8 +104,6 @@ ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-# /usr/local/lib/librealsense2.so
-# /usr/lib/x86_64-linux-gnu/librealsense2.so.2.42
 nvToolsExt
 -lboost_system
 )
@@ -128,18 +126,6 @@ target_link_libraries(mono_tum ${PROJECT_NAME})
 
 add_executable(mono_kitti Examples/Monocular/mono_kitti.cc)
 target_link_libraries(mono_kitti ${PROJECT_NAME})
-
-# add_executable(csi_camera gpu/csi_camera.cc)
-# target_link_libraries(csi_camera ${PROJECT_NAME})
-
-# add_executable(stereo_real_sense RealSense_GPU/stereo_real_sense.cc)
-# target_link_libraries(stereo_real_sense ${PROJECT_NAME})
-
-# add_executable(rgbd_real_sense RealSense_GPU/rgbd_real_sense.cc)
-# target_link_libraries(rgbd_real_sense ${PROJECT_NAME})
-
-# add_executable(mono_real_sense RealSense_GPU/mono_real_sense.cc)
-# target_link_libraries(mono_real_sense ${PROJECT_NAME})
 
 # Build tools
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tools)

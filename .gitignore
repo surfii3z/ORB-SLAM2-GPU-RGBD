@@ -47,3 +47,4 @@ devel/
 logs/
 
 Examples/ROS/src/vision_opencv/
+tools/bin_vocabulary

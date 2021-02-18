@@ -34,9 +34,10 @@ message(STATUS "Using flag -std=c++11.")
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../../cmake_modules)
 
 find_package(OpenCV REQUIRED
-NO_MODULE 
-PATHS /usr/local
-NO_DEFAULT_PATH) #make sure not doesn't link to ROS OpenCV version
+  NO_MODULE 
+  PATHS /usr/local
+  NO_DEFAULT_PATH) #make sure not doesn't link to ROS OpenCV version
+
 find_package(Eigen3 REQUIRED)
 find_package(Pangolin REQUIRED)
 
@@ -59,8 +60,6 @@ ${PROJECT_SOURCE_DIR}/../../../../include
 ${Pangolin_INCLUDE_DIRS}
 ${EIGEN3_INCLUDE_DIR}
 ${catkin_INCLUDE_DIRS}
-# /usr/local/lib/librealsense2.so
-# /usr/lib/x86_64-linux-gnu/librealsense2.so.2.42
 nvToolsExt
 )
 
@@ -104,7 +103,6 @@ ${PROJECT_SOURCE_DIR}/../../../../Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/../../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../../build/lib/libORB_SLAM2.so
 -lboost_system
-# realsense2
 )
 
 
