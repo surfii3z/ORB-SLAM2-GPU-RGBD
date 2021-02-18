@@ -7,7 +7,17 @@
 - [ ] Save/ load map: [raulmur/ORB_SLAM2/PR#381](https://github.com/raulmur/ORB_SLAM2/pull/381)
 
 ## Installation
-1) Install cuda-enable OpenCV. Tested with `OpenCV 3.4.11` and `CUDA 10.1`
+1) Install the prerequisites from [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) original repo.
+2) Build using `build.sh`
+```bash
+cd /path/to/orb_slam2_gpu
+sh build.sh
+```
+3) Build the binary version of vocaburary.
+```
+./tools/bin_vocabulary
+```
+5) Install cuda-enable OpenCV. Tested with `OpenCV 3.4.11` and `CUDA 10.1`
     - [Installing Multiple CUDA & cuDNN Versions in Ubuntu](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
     - [Specify custom build OpenCV version with ROS project](https://answers.ros.org/question/242376/having-trouble-using-cuda-enabled-opencv-with-kinetic/)
 ```
@@ -18,7 +28,7 @@ find_package(OpenCV REQUIRED
     PATHS /usr/local # look here
     NO_DEFAULT_PATH) # and don't look anywhere else
 ```
-2) Compile vision_opencv from source
+5) Compile vision_opencv from source
 ```bash
  cd /path/to/ROS/src
  git clone https://github.com/ros-perception/vision_opencv
@@ -28,7 +38,8 @@ find_package(OpenCV REQUIRED
  cd /path/to/ROS
  catkin build
 ```
-------- Original Readme from connorsoohoo -------
+-------
+# Original Readme from connorsoohoo
 # ORB-SLAM2-GPU-RGBD
 This is an optimized version of the ORB SLAM2 library and yunchih's monocular GPU acceleration to include RGB-D vision.
 This optimization runs in real time on the Jetson TX2. At max clock rate we achieve around **18-20 fps** on average.
