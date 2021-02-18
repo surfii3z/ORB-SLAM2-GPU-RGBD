@@ -8,19 +8,38 @@
 
 ## Installation
 1) Install the prerequisites from [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) original repo.
-2) Build using `build.sh`
+2) Install dependencies according to `get_dependencies.sh` and `post_reset_get_dependencies.sh`
+```bash
+# dependencies according to get_dependencies.sh, might not need all, IDK.
+
+# Install Lapack and Lablas and build
+sudo apt install libblas-dev
+sudo apt install liblapack-dev
+sudo apt install libomp-dev
+sudo apt-get install libglew-dev
+
+
+sudo apt-get install gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base
+
+# Install gstreamer
+sudo apt-get install gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+sudo apt-get install gstreamer1.0-libav libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+sudo apt get install libgstreamer-plugins-good1.0-dev libgstreamer-plugins-bad1.0-dev
+
+```
+3) Build using `build.sh`
 ```bash
 cd /path/to/orb_slam2_gpu
 sh build.sh
 ```
-3) Build the binary version of vocaburary.
+4) Build the binary version of vocaburary.
 ```
 ./tools/bin_vocabulary
 ```
 5) Install cuda-enable OpenCV. Tested with `OpenCV 3.4.11` and `CUDA 10.1`
     - [Installing Multiple CUDA & cuDNN Versions in Ubuntu](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
     - [Specify custom build OpenCV version with ROS project](https://answers.ros.org/question/242376/having-trouble-using-cuda-enabled-opencv-with-kinetic/)
-```
+```cmake
 # In summary, in CMakeList.txt just change from  find_package(OpenCV) to the following
 
 find_package(OpenCV REQUIRED
@@ -28,7 +47,7 @@ find_package(OpenCV REQUIRED
     PATHS /usr/local # look here
     NO_DEFAULT_PATH) # and don't look anywhere else
 ```
-5) Compile vision_opencv from source
+6) Compile vision_opencv from source
 ```bash
  cd /path/to/ROS/src
  git clone https://github.com/ros-perception/vision_opencv
