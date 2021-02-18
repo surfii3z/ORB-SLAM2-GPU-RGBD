@@ -61,20 +61,18 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "RGBD");
     cerr  << "RGB node: start" << endl;
-    cerr << "OpenCV version : " << CV_VERSION << endl;
-    cerr << cv::getBuildInformation() << endl;
 
     ros::start();
 
-    if(argc != 3)
+    if(argc != 4)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;
+        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings [1|0](save map?)" << endl;
         ros::shutdown();
         return 1;
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true, (bool)atoi(argv[3]));
 
     ros::NodeHandle nh;
 
