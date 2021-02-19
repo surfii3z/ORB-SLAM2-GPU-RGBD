@@ -1,6 +1,15 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+/*  The default coordinate of ORB_SLAM2 trajectory is EDN (East(x)-Down(y)-North(z)).
+ *  
+ *  This matrix change from EDN to ENU
+ *        [1, 0, 0,        x        x'
+ *         0, 0, 1,   *    y   =    z'
+ *         0,-1, 0]        z       -y'
+ * 
+ */
+
 #include <ros/ros.h>
 
 #include <iostream>
@@ -9,6 +18,7 @@
 #include <chrono>
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
@@ -22,60 +32,125 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/eigen.hpp>
 
+#include "../../../include/System.h"
+
 using namespace std;
 
-static const boost::array<double, 36> STANDARD_POSE_COVARIANCE =
-    {{0.1, 0, 0, 0, 0, 0,
-      0, 0.1, 0, 0, 0, 0,
-      0, 0, 0.1, 0, 0, 0,
-      0, 0, 0, 0.1, 0, 0,
-      0, 0, 0, 0, 0.1, 0,
-      0, 0, 0, 0, 0, 0.1}};
+// define SLAM and publisher for all the systems
+class ImageGrabber
+{
+public:
+    ImageGrabber(ORB_SLAM2::System *pSLAM, ros::NodeHandle *nh) : mpSLAM(pSLAM), pnh(nh)
+    {
+        mOdomPub = pnh->advertise<nav_msgs::Odometry>("/orb_slam/odom", 1);
+        mPoseStampedPub = pnh->advertise<geometry_msgs::PoseStamped>("/orb_slam/pose", 1);
+    }
+
+    void GrabImage(const sensor_msgs::ImageConstPtr &msg);
+    void GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sensor_msgs::ImageConstPtr &msgD);
+    void GrabStereo(const sensor_msgs::ImageConstPtr &msgLeft, const sensor_msgs::ImageConstPtr &msgRight);
+
+    ORB_SLAM2::System *mpSLAM;
+    bool do_rectify;
+    cv::Mat M1l, M2l, M1r, M2r;
+
+    ros::NodeHandle *pnh;
+    ros::Publisher mOdomPub;
+    ros::Publisher mPoseStampedPub;
+};
+
+// static const boost::array<double, 36> STANDARD_POSE_COVARIANCE =
+//     {{0.1, 0, 0, 0, 0, 0,
+//       0, 0.1, 0, 0, 0, 0,
+//       0, 0, 0.1, 0, 0, 0,
+//       0, 0, 0, 0.1, 0, 0,
+//       0, 0, 0, 0, 0.1, 0,
+//       0, 0, 0, 0, 0, 0.1}};
+
+// To initialize:
+// ref: https://stackoverflow.com/questions/31549398/c-eigen-initialize-static-matrix
+static const Eigen::Matrix3d cv_to_ros = [] {
+    Eigen::Matrix3d tmp;
+    tmp << 1, 0, 0,
+           0, 0, 1,
+           0, -1, 0;
+    return tmp;
+}();
 
 namespace common
 {
   inline void CreateOdomMsg(nav_msgs::Odometry &odom,
                             const sensor_msgs::ImageConstPtr &msgRGB,
-                            cv::Mat cvTCW)
+                            cv::Mat cvTcw)
   {
-    /* Get transform from Cameta to World and translate it into a nav_msgs.Odom */
-    // Invert to get the TWC
-    cv::Mat cvTWC = cvTCW.inv();
+    // Invert to get the cvTwc
+    cv::Mat cvTwc = cvTcw.inv();
     // Open CV mat to Eigen matrix (float)
-    Eigen::Matrix4f T_eigen_f;
-    cv::cv2eigen(cvTWC, T_eigen_f);
-    // Eigen matrix (float) to Eigen matrix (double)
-    Eigen::Matrix4d T_eigen_d = T_eigen_f.cast<double>();
-    // Extracting and orthonormalizing the rotation matrix
-    Eigen::Matrix3d R_unnormalized = T_eigen_d.block<3, 3>(0, 0);
-    Eigen::AngleAxisd aa(R_unnormalized);
-    Eigen::Matrix3d R = aa.toRotationMatrix();
-    Eigen::Quaterniond eigQuat(R);
-    // Extract the translation
-    Eigen::Vector3d T(T_eigen_d.block<3, 1>(0, 3));
+    Eigen::Matrix4d Twc;
+    cv::cv2eigen(cvTwc, Twc);
+
+    // Extract rotation matrix and translation vector from
+    Eigen::Matrix3d rot = Twc.block<3, 3>(0, 0);
+    Eigen::Vector3d trans = Twc.block<3, 1>(0, 3);
+
+    // Transform from CV coordinate system to ROS coordinate system on camera coordinates
+    Eigen::Quaterniond quat(cv_to_ros * rot * cv_to_ros.transpose());
+    trans = cv_to_ros * trans;
 
     // Format the Odom msg
     odom.header.stamp = msgRGB->header.stamp;
     // odom.header.frame_id = msgRGB->header.frame_id;
     odom.header.frame_id = "world";
 
-    odom.pose.pose.position.x = T(0);
-    odom.pose.pose.position.y = T(1);
-    odom.pose.pose.position.z = T(2);
+    odom.pose.pose.position.x = trans(0);
+    odom.pose.pose.position.y = trans(1);
+    odom.pose.pose.position.z = trans(2);
 
-    odom.pose.pose.orientation.x = eigQuat.x();
-    odom.pose.pose.orientation.y = eigQuat.y();
-    odom.pose.pose.orientation.z = eigQuat.z();
-    odom.pose.pose.orientation.w = eigQuat.w();
+    odom.pose.pose.orientation.x = quat.x();
+    odom.pose.pose.orientation.y = quat.y();
+    odom.pose.pose.orientation.z = quat.z();
+    odom.pose.pose.orientation.w = quat.w();
+
+    // for( int i = 0; i < 6; i++ )
+    // {
+    //   for( int j = 0; j < 6; j++ ) {
+    //     odom.pose.covariance[ i*6 + j ] = poseCovariance(i,j);
+    //   }
+    // }
   }
 
-  //
-  //   for( int i = 0; i < 6; i++ )
-  //   {
-  //     for( int j = 0; j < 6; j++ ) {
-  //       odom.pose.covariance[ i*6 + j ] = poseCovariance(i,j);
-  //     }
-  //   }
-  // }
+  inline void CreatePoseStampedMsg(geometry_msgs::PoseStamped &poseStamped,
+                                   const sensor_msgs::ImageConstPtr &msgRGB,
+                                   cv::Mat cvTcw)
+  {
+    // Invert to get the cvTwc
+    cv::Mat cvTwc = cvTcw.inv();
+    // Open CV mat to Eigen matrix (float)
+    Eigen::Matrix4d Twc;
+    cv::cv2eigen(cvTwc, Twc);
+
+    // Extract rotation matrix and translation vector from
+    Eigen::Matrix3d rot = Twc.block<3, 3>(0, 0);
+    Eigen::Vector3d trans = Twc.block<3, 1>(0, 3);
+
+    // Transform from CV coordinate system to ROS coordinate system on camera coordinates
+    Eigen::Quaterniond quat(cv_to_ros * rot * cv_to_ros.transpose());
+    trans = cv_to_ros * trans;
+
+    // Format the Odom msg
+    poseStamped.header.stamp = msgRGB->header.stamp;
+    poseStamped.header.frame_id = "world";
+
+    poseStamped.pose.position.x = trans(0);
+    poseStamped.pose.position.y = trans(1);
+    poseStamped.pose.position.z = trans(2);
+
+    poseStamped.pose.orientation.x = quat.x();
+    poseStamped.pose.orientation.y = quat.y();
+    poseStamped.pose.orientation.z = quat.z();
+    poseStamped.pose.orientation.w = quat.w();
+
+  }
+
 }
 #endif // COMMON_H

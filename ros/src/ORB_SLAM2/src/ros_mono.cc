@@ -37,25 +37,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/eigen.hpp>
 
-#include "../../../include/System.h"
 #include "common.h"
 using namespace std;
-
-class ImageGrabber
-{
-public:
-  ImageGrabber(ORB_SLAM2::System *pSLAM, ros::NodeHandle *nh) : mpSLAM(pSLAM), pnh(nh)
-  {
-    mOdomPub = pnh->advertise<nav_msgs::Odometry>("/orb_slam/odom", 1);
-  }
-
-  void GrabImage(const sensor_msgs::ImageConstPtr &msg);
-
-  ORB_SLAM2::System *mpSLAM;
-
-  ros::NodeHandle *pnh;
-  ros::Publisher mOdomPub;
-};
 
 int main(int argc, char **argv)
 {
@@ -77,7 +60,7 @@ int main(int argc, char **argv)
 
   ImageGrabber igb(&SLAM, &nodeHandler);
 
-  ros::Subscriber sub = nodeHandler.subscribe("/camera/image_raw", 1, &ImageGrabber::GrabImage, &igb);
+  ros::Subscriber sub = nodeHandler.subscribe("/packnet/color/image_raw", 1, &ImageGrabber::GrabImage, &igb);
 
   ros::spin();
 

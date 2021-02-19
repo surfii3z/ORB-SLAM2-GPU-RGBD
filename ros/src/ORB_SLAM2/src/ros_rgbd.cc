@@ -37,24 +37,9 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/eigen.hpp>
 
-#include "../../../include/System.h"
 #include "common.h"
+
 using namespace std;
-
-class ImageGrabber
-{
-public:
-    ImageGrabber(ORB_SLAM2::System *pSLAM, ros::NodeHandle *nh) : mpSLAM(pSLAM), pnh(nh)
-    {
-        mOdomPub = pnh->advertise<nav_msgs::Odometry>("/orb_slam/odom", 1);
-    }
-
-    void GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sensor_msgs::ImageConstPtr &msgD);
-
-    ORB_SLAM2::System *mpSLAM;
-    ros::NodeHandle *pnh;
-    ros::Publisher mOdomPub;
-};
 
 int main(int argc, char **argv)
 {
@@ -123,6 +108,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sens
 
     cv::Mat cvTCW;
     nav_msgs::Odometry odom_msg;
+    geometry_msgs::PoseStamped poseStamped_msg;
 
     // ROS_INFO("processing seq %d", msgRGB->header.seq);
 
@@ -131,6 +117,8 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sens
     if (!cvTCW.empty())
     {
         common::CreateOdomMsg(odom_msg, msgRGB, cvTCW);
+        common::CreatePoseStampedMsg(poseStamped_msg, msgRGB, cvTCW);
         mOdomPub.publish(odom_msg);
+        mPoseStampedPub.publish(poseStamped_msg);
     }
 }

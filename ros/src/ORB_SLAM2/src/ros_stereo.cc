@@ -37,27 +37,9 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/eigen.hpp>
 
-#include "../../../include/System.h"
+
 #include "common.h"
 using namespace std;
-
-class ImageGrabber
-{
-public:
-    ImageGrabber(ORB_SLAM2::System *pSLAM, ros::NodeHandle *nh) : mpSLAM(pSLAM), pnh(nh)
-    {
-        mOdomPub = pnh->advertise<nav_msgs::Odometry>("/orb_slam/odom", 1);
-    }
-
-    void GrabStereo(const sensor_msgs::ImageConstPtr &msgLeft, const sensor_msgs::ImageConstPtr &msgRight);
-
-    ORB_SLAM2::System *mpSLAM;
-    bool do_rectify;
-    cv::Mat M1l, M2l, M1r, M2r;
-
-    ros::NodeHandle *pnh;
-    ros::Publisher mOdomPub;
-};
 
 int main(int argc, char **argv)
 {
