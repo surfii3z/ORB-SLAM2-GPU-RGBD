@@ -46,5 +46,5 @@ CameraTrajectory.txt
 devel/
 logs/
 
-Examples/ROS/src/vision_opencv/
+vision_opencv/
 tools/bin_vocabulary
