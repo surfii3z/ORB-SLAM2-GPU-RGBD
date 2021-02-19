@@ -1,3 +1,6 @@
+## Known issues
+- It doesn't work well when we hit the reset button in GUI. But restarting it solves the problem though.
+
 ## Feature note
 - [x] ROS publish odometry message:  [raulmur/ORB_SLAM2/PR#692](https://github.com/raulmur/ORB_SLAM2/pull/692)
 - [x] ROS build with catkin build: [raulmur/ORB_SLAM2/PR#2](https://github.com/raulmur/ORB_SLAM2/pull/2)
