@@ -48,7 +48,7 @@ find_package(OpenCV REQUIRED
     PATHS /usr/local # look here
     NO_DEFAULT_PATH) # and don't look anywhere else
 ```
-6) Compile vision_opencv from source
+6) Compile vision_opencv from source. This is because the default version of OpenCV that comes with Ubuntu is not CUDA-enabled. So we need to install CUDA-enabled version of OpenCV (in the previous step) and then recompile vision_opencv with the new version of the OpenCV. Otherwise, catkin workspace will craw in the default version of OpenCV causing catkin build error.
 ```bash
  cd /path/to/ROS/src
  git clone https://github.com/ros-perception/vision_opencv
