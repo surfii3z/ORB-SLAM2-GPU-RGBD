@@ -55,8 +55,8 @@ catkin_package()
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
-${PROJECT_SOURCE_DIR}/../../../../
-${PROJECT_SOURCE_DIR}/../../../../include
+${PROJECT_SOURCE_DIR}/../../../
+${PROJECT_SOURCE_DIR}/../../../include
 ${Pangolin_INCLUDE_DIRS}
 ${EIGEN3_INCLUDE_DIR}
 ${catkin_INCLUDE_DIRS}
@@ -68,29 +68,29 @@ cuda_include_directories(
 )
 
 cuda_add_library(${PROJECT_NAME} SHARED
-../../../../src/System.cc
-../../../../src/Tracking.cc
-../../../../src/LocalMapping.cc
-../../../../src/LoopClosing.cc
-../../../../src/ORBextractor.cc
-../../../../src/ORBmatcher.cc
-../../../../src/FrameDrawer.cc
-../../../../src/Converter.cc
-../../../../src/MapPoint.cc
-../../../../src/KeyFrame.cc
-../../../../src/Map.cc
-../../../../src/MapDrawer.cc
-../../../../src/Optimizer.cc
-../../../../src/PnPsolver.cc
-../../../../src/Frame.cc
-../../../../src/KeyFrameDatabase.cc
-../../../../src/Sim3Solver.cc
-../../../../src/Initializer.cc
-../../../../src/Viewer.cc
-../../../../src/cuda/Allocator_gpu.cu
-../../../../src/cuda/Fast_gpu.cu
-../../../../src/cuda/Orb_gpu.cu
-../../../../src/cuda/Cuda.cu
+../../../src/System.cc
+../../../src/Tracking.cc
+../../../src/LocalMapping.cc
+../../../src/LoopClosing.cc
+../../../src/ORBextractor.cc
+../../../src/ORBmatcher.cc
+../../../src/FrameDrawer.cc
+../../../src/Converter.cc
+../../../src/MapPoint.cc
+../../../src/KeyFrame.cc
+../../../src/Map.cc
+../../../src/MapDrawer.cc
+../../../src/Optimizer.cc
+../../../src/PnPsolver.cc
+../../../src/Frame.cc
+../../../src/KeyFrameDatabase.cc
+../../../src/Sim3Solver.cc
+../../../src/Initializer.cc
+../../../src/Viewer.cc
+../../../src/cuda/Allocator_gpu.cu
+../../../src/cuda/Fast_gpu.cu
+../../../src/cuda/Orb_gpu.cu
+../../../src/cuda/Cuda.cu
 )
 
 set(LIBS 
@@ -99,9 +99,9 @@ ${catkin_LIBRARIES}
 ${CUDA_LIBRARIES}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
-${PROJECT_SOURCE_DIR}/../../../../Thirdparty/DBoW2/lib/libDBoW2.so
-${PROJECT_SOURCE_DIR}/../../../../Thirdparty/g2o/lib/libg2o.so
-${PROJECT_SOURCE_DIR}/../../../../build/lib/libORB_SLAM2.so
+${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
+${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
+${PROJECT_SOURCE_DIR}/../../../build/lib/libORB_SLAM2.so
 -lboost_system
 )
 
