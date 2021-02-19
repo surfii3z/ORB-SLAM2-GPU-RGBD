@@ -1,10 +1,10 @@
 ## Feature note
 - [x] ROS publish odometry message:  [raulmur/ORB_SLAM2/PR#692](https://github.com/raulmur/ORB_SLAM2/pull/692)
 - [x] ROS build with catkin build: [raulmur/ORB_SLAM2/PR#2](https://github.com/raulmur/ORB_SLAM2/pull/2)
-- [x] GPU accelerated: [connorsoohoo/ORB-SLAM2-GPU-RGBD](https://github.com/connorsoohoo/ORB-SLAM2-GPU-RGBD)
 - [x] Binary version of vocab:  [raulmur/ORB_SLAM2/PR#21](https://github.com/raulmur/ORB_SLAM2/pull/21)
 - [x] Pause/ Resume mapping: [raulmur/ORB_SLAM2/PR#587](https://github.com/raulmur/ORB_SLAM2/pull/587)
 - [x] Save/ load map: [raulmur/ORB_SLAM2/PR#381](https://github.com/raulmur/ORB_SLAM2/pull/381)
+- [x] GPU accelerated: [connorsoohoo/ORB-SLAM2-GPU-RGBD](https://github.com/connorsoohoo/ORB-SLAM2-GPU-RGBD)
 
 
 ## Installation
