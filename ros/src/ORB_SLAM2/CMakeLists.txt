@@ -41,6 +41,9 @@ find_package(OpenCV REQUIRED
 find_package(Eigen3 REQUIRED)
 find_package(Pangolin REQUIRED)
 
+find_package(PCL 1.7 REQUIRED)
+
+
 # catkin_package()
 
 message(STATUS ${OpenCV_INCLUDE_DIRS})
@@ -60,8 +63,12 @@ ${PROJECT_SOURCE_DIR}/../../../include
 ${Pangolin_INCLUDE_DIRS}
 ${EIGEN3_INCLUDE_DIR}
 ${catkin_INCLUDE_DIRS}
+${PCL_INCLUDE_DIRS}
 nvToolsExt
 )
+
+add_definitions(${PCL_DEFINITIONS})
+link_directories(${PCL_LIBRARY_DIRS})
 
 cuda_include_directories(
   ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc
@@ -87,6 +94,7 @@ cuda_add_library(${PROJECT_NAME} SHARED
 ../../../src/Sim3Solver.cc
 ../../../src/Initializer.cc
 ../../../src/Viewer.cc
+../../../src/PointCloudMapping.cc
 ../../../src/cuda/Allocator_gpu.cu
 ../../../src/cuda/Fast_gpu.cu
 ../../../src/cuda/Orb_gpu.cu
@@ -102,6 +110,7 @@ ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../build/lib/libORB_SLAM2.so
+${PCL_LIBRARIES}
 -lboost_system
 )
 

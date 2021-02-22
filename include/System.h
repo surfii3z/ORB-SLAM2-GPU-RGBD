@@ -42,8 +42,15 @@
 #include<condition_variable>
 
 #include "BoostArchiver.h"
+
 // for map file io
 #include <fstream>
+
+// for point cloud viewing
+#include "PointCloudMapping.h"
+
+class PointCloudMapping;
+
 
 namespace ORB_SLAM2
 {
@@ -179,6 +186,9 @@ private:
     std::mutex mMutexMode;
     bool mbActivateLocalizationMode;
     bool mbDeactivateLocalizationMode;
+
+    // point cloud mapping
+    shared_ptr<PointCloudMapping> mpPointCloudMapping;
 };
 
 }// namespace ORB_SLAM

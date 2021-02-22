@@ -54,6 +54,8 @@ find_package(OpenCV REQUIRED
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+# adding for point cloud viewer and mapper
+find_package(PCL 1.7 REQUIRED)
 
 message(STATUS ${OpenCV_INCLUDE_DIRS})
 
@@ -62,7 +64,11 @@ ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
+${PCL_INCLUDE_DIRS}
 )
+
+add_definitions(${PCL_DEFINITIONS})
+link_directories(${PCL_LIBRARY_DIRS})
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 
@@ -90,6 +96,7 @@ src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
 src/Initializer.cc
 src/Viewer.cc
+src/PointCloudMapping.cc
 src/SGFilter.cc
 src/cuda/Allocator_gpu.cu
 src/cuda/Fast_gpu.cu
@@ -104,6 +111,7 @@ ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+${PCL_LIBRARIES}
 nvToolsExt
 -lboost_system
 )

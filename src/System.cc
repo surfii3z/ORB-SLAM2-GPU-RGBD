@@ -63,6 +63,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
        exit(-1);
     }
 
+    // for point cloud resolution
+    float resolution = fsSettings["PointCloudMapping.Resolution"];
+
     cv::FileNode mapfilen = fsSettings["Map.mapfile"];
     bool bReuseMap = false;
     if (!mapfilen.empty())
@@ -104,10 +107,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpFrameDrawer = new FrameDrawer(mpMap, bReuseMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
+    // Initialize pointcloud mapping
+    mpPointCloudMapping = make_shared<PointCloudMapping>( resolution );
+
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor, bReuseMap);
+                             mpMap, mpPointCloudMapping, mpKeyFrameDatabase, strSettingsFile, mSensor, bReuseMap);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
@@ -339,6 +345,7 @@ void System::Shutdown()
 {
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
+    mpPointCloudMapping->shutdown();
 
     if (mpViewer) {
 	mpViewer->RequestFinish();
