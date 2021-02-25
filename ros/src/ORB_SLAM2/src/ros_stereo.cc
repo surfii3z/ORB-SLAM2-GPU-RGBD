@@ -165,7 +165,8 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr &msgLeft, const s
 
     if (!cvTCW.empty())
     {
-        common::CreateOdomMsg(odom_msg, msgLeft, cvTCW);
+        common::CreateMsg(odom_msg, poseStamped_msg, msgLeft, cvTCW);
         mOdomPub.publish(odom_msg);
+        mPoseStampedPub.publish(poseStamped_msg);
     }
 }

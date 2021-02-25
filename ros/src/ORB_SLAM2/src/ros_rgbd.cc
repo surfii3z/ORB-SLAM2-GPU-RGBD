@@ -106,18 +106,11 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sens
         return;
     }
 
-    cv::Mat cvTCW;
-    nav_msgs::Odometry odom_msg;
-    geometry_msgs::PoseStamped poseStamped_msg;
-
-    // ROS_INFO("processing seq %d", msgRGB->header.seq);
-
     cvTCW = mpSLAM->TrackRGBD(cv_ptrRGB->image, cv_ptrD->image, cv_ptrRGB->header.stamp.toSec());
 
     if (!cvTCW.empty())
     {
-        common::CreateOdomMsg(odom_msg, msgRGB, cvTCW);
-        common::CreatePoseStampedMsg(poseStamped_msg, msgRGB, cvTCW);
+        common::CreateMsg(odom_msg, poseStamped_msg, msgRGB, cvTCW);
         mOdomPub.publish(odom_msg);
         mPoseStampedPub.publish(poseStamped_msg);
     }

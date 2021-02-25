@@ -4,10 +4,14 @@
 /*  The default coordinate of ORB_SLAM2 trajectory is EDN (East(x)-Down(y)-North(z)).
  *  
  *  This matrix change from EDN to ENU
- *        [1, 0, 0,        x        x'
- *         0, 0, 1,   *    y   =    z'
- *         0,-1, 0]        z       -y'
+ *        [1, 0, 0,        x        x          x'
+ *         0, 0, 1,   *    y   =    z    =     y'
+ *         0,-1, 0]        z       -y          z'
  * 
+ *  This matrix change from EDN (ORB_SLAM2) to NEU (ROS: REP 103)
+ *        [0, 0, 1,        x        z          x'
+ *        -1, 0, 0,   *    y   =   -x    =     y'
+ *         0,-1, 0]        z       -y          z'
  */
 
 #include <ros/ros.h>
@@ -40,23 +44,27 @@ using namespace std;
 class ImageGrabber
 {
 public:
-    ImageGrabber(ORB_SLAM2::System *pSLAM, ros::NodeHandle *nh) : mpSLAM(pSLAM), pnh(nh)
-    {
-        mOdomPub = pnh->advertise<nav_msgs::Odometry>("/orb_slam/odom", 1);
-        mPoseStampedPub = pnh->advertise<geometry_msgs::PoseStamped>("/orb_slam/pose", 1);
-    }
+  ImageGrabber(ORB_SLAM2::System *pSLAM, ros::NodeHandle *nh) : mpSLAM(pSLAM), pnh(nh)
+  {
+    mOdomPub = pnh->advertise<nav_msgs::Odometry>("/orb_slam/odom", 1);
+    mPoseStampedPub = pnh->advertise<geometry_msgs::PoseStamped>("/orb_slam/pose", 1);
+  }
 
-    void GrabImage(const sensor_msgs::ImageConstPtr &msg);
-    void GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sensor_msgs::ImageConstPtr &msgD);
-    void GrabStereo(const sensor_msgs::ImageConstPtr &msgLeft, const sensor_msgs::ImageConstPtr &msgRight);
+  void GrabImage(const sensor_msgs::ImageConstPtr &msg);
+  void GrabRGBD(const sensor_msgs::ImageConstPtr &msgRGB, const sensor_msgs::ImageConstPtr &msgD);
+  void GrabStereo(const sensor_msgs::ImageConstPtr &msgLeft, const sensor_msgs::ImageConstPtr &msgRight);
 
-    ORB_SLAM2::System *mpSLAM;
-    bool do_rectify;
-    cv::Mat M1l, M2l, M1r, M2r;
+  ORB_SLAM2::System *mpSLAM;
+  bool do_rectify;
+  cv::Mat M1l, M2l, M1r, M2r;
 
-    ros::NodeHandle *pnh;
-    ros::Publisher mOdomPub;
-    ros::Publisher mPoseStampedPub;
+  ros::NodeHandle *pnh;
+  ros::Publisher mOdomPub;
+  ros::Publisher mPoseStampedPub;
+
+  cv::Mat cvTCW;
+  nav_msgs::Odometry odom_msg;
+  geometry_msgs::PoseStamped poseStamped_msg;
 };
 
 // static const boost::array<double, 36> STANDARD_POSE_COVARIANCE =
@@ -70,18 +78,18 @@ public:
 // To initialize:
 // ref: https://stackoverflow.com/questions/31549398/c-eigen-initialize-static-matrix
 static const Eigen::Matrix3d cv_to_ros = [] {
-    Eigen::Matrix3d tmp;
-    tmp << 1, 0, 0,
-           0, 0, 1,
-           0, -1, 0;
-    return tmp;
+  Eigen::Matrix3d tmp;
+  tmp << 0, 0, 1,
+      -1, 0, 0,
+      0, -1, 0;
+  return tmp;
 }();
 
 namespace common
 {
-  inline void CreateOdomMsg(nav_msgs::Odometry &odom,
-                            const sensor_msgs::ImageConstPtr &msgRGB,
-                            cv::Mat cvTcw)
+  inline void CreateMsg(nav_msgs::Odometry &odom, geometry_msgs::PoseStamped &poseStamped,
+                        const sensor_msgs::ImageConstPtr &msgRGB,
+                        cv::Mat cvTcw)
   {
     // Invert to get the cvTwc
     cv::Mat cvTwc = cvTcw.inv();
@@ -117,25 +125,6 @@ namespace common
     //     odom.pose.covariance[ i*6 + j ] = poseCovariance(i,j);
     //   }
     // }
-  }
-
-  inline void CreatePoseStampedMsg(geometry_msgs::PoseStamped &poseStamped,
-                                   const sensor_msgs::ImageConstPtr &msgRGB,
-                                   cv::Mat cvTcw)
-  {
-    // Invert to get the cvTwc
-    cv::Mat cvTwc = cvTcw.inv();
-    // Open CV mat to Eigen matrix (float)
-    Eigen::Matrix4d Twc;
-    cv::cv2eigen(cvTwc, Twc);
-
-    // Extract rotation matrix and translation vector from
-    Eigen::Matrix3d rot = Twc.block<3, 3>(0, 0);
-    Eigen::Vector3d trans = Twc.block<3, 1>(0, 3);
-
-    // Transform from CV coordinate system to ROS coordinate system on camera coordinates
-    Eigen::Quaterniond quat(cv_to_ros * rot * cv_to_ros.transpose());
-    trans = cv_to_ros * trans;
 
     // Format the Odom msg
     poseStamped.header.stamp = msgRGB->header.stamp;
@@ -149,7 +138,6 @@ namespace common
     poseStamped.pose.orientation.y = quat.y();
     poseStamped.pose.orientation.z = quat.z();
     poseStamped.pose.orientation.w = quat.w();
-
   }
 
 }
