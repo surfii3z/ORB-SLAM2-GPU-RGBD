@@ -8,8 +8,9 @@
 
 
 ## Installation
-1) Install the prerequisites from [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) original repo.
-2) Install dependencies according to `get_dependencies.sh` and `post_reset_get_dependencies.sh`
+1) Compile opencv with cuda following this [link](https://cuda-chen.github.io/image%20processing/programming/2020/02/22/build-opencv-dnn-module-with-nvidia-gpu-support-on-ubuntu-1804.html)
+2) Install the prerequisites from [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) original repo.
+3) Install dependencies according to `get_dependencies.sh` and `post_reset_get_dependencies.sh`
 ```bash
 # dependencies according to get_dependencies.sh, might not need all, IDK.
 
@@ -28,16 +29,16 @@ sudo apt-get install gstreamer1.0-libav libgstreamer1.0-dev libgstreamer-plugins
 sudo apt get install libgstreamer-plugins-good1.0-dev libgstreamer-plugins-bad1.0-dev
 
 ```
-3) Build using `build.sh`
+4) Build using `build.sh`
 ```bash
 cd /path/to/orb_slam2_gpu
 sh build.sh
 ```
-4) Build the binary version of vocaburary.
+5) Build the binary version of vocaburary.
 ```
 ./tools/bin_vocabulary
 ```
-5) Install cuda-enable OpenCV. Tested with `OpenCV 3.4.11` and `CUDA 10.1`
+6) Install cuda-enable OpenCV. Tested with `OpenCV 3.4.11` and `CUDA 10.1`
     - [Installing Multiple CUDA & cuDNN Versions in Ubuntu](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
     - [Specify custom build OpenCV version with ROS project](https://answers.ros.org/question/242376/having-trouble-using-cuda-enabled-opencv-with-kinetic/)
 ```cmake
