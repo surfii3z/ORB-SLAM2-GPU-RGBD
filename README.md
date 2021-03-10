@@ -8,7 +8,7 @@
 
 
 ## Installation
-1) Compile opencv with cuda following this [link](https://cuda-chen.github.io/image%20processing/programming/2020/02/22/build-opencv-dnn-module-with-nvidia-gpu-support-on-ubuntu-1804.html)
+1) Compile opencv with cuda following this [link](https://cuda-chen.github.io/image%20processing/programming/2020/02/22/build-opencv-dnn-module-with-nvidia-gpu-support-on-ubuntu-1804.html) or this [link](https://learnopencv.com/opencv-dnn-with-gpu-support/)
 2) Install the prerequisites from [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) original repo.
 3) Install dependencies according to `get_dependencies.sh` and `post_reset_get_dependencies.sh`
 ```bash
