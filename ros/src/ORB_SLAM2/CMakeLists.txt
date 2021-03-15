@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   cv_bridge
   cmake_modules
+  tf2_geometry_msgs
 )
 
 set (CMAKE_CXX_STANDARD 11)

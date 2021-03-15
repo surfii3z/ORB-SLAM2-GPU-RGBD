@@ -10,16 +10,18 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>roscpp</build_depend>
-  <build_depend>tf</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
   <build_depend>image_transport</build_depend>
   <build_depend>message_filters</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>cmake_modules</build_depend>
 
   <run_depend>roscpp</run_depend>
-  <run_depend>tf</run_depend>
+  <run_depend>tf2_geometry_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
   <run_depend>image_transport</run_depend>
   <run_depend>message_filters</run_depend>
   <run_depend>cv_bridge</run_depend>

@@ -23,10 +23,9 @@
 
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
-#include <tf_conversions/tf_eigen.h>
+
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -126,7 +125,7 @@ namespace common
     //   }
     // }
 
-    // Format the Odom msg
+    // Format the poseStamped msg
     poseStamped.header.stamp = msgRGB->header.stamp;
     poseStamped.header.frame_id = "world";
 
@@ -138,6 +137,25 @@ namespace common
     poseStamped.pose.orientation.y = quat.y();
     poseStamped.pose.orientation.z = quat.z();
     poseStamped.pose.orientation.w = quat.w();
+
+    // Format the transformStamped msg
+    static tf2_ros::TransformBroadcaster tf_br;
+    geometry_msgs::TransformStamped transformStamped_msg;
+
+    transformStamped_msg.header.stamp = msgRGB->header.stamp;
+    transformStamped_msg.header.frame_id = "map";
+    transformStamped_msg.child_frame_id = "base_link_frame";
+
+    transformStamped_msg.transform.translation.x = trans(0);
+    transformStamped_msg.transform.translation.y = trans(1);
+    transformStamped_msg.transform.translation.z = trans(2);
+
+    transformStamped_msg.transform.rotation.x = quat.x();
+    transformStamped_msg.transform.rotation.y = quat.y();
+    transformStamped_msg.transform.rotation.z = quat.z();
+    transformStamped_msg.transform.rotation.w = quat.w();
+
+    tf_br.sendTransform(transformStamped_msg);
   }
 
 }
