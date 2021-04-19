@@ -1,14 +1,14 @@
 ## Feature note
-- [x] ROS publish odometry message: [raulmur/ORB_SLAM2/PR#21](https://github.com/raulmur/ORB_SLAM2/pull/21)
+- [x] ROS publish odometry message: [raulmur/ORB_SLAM2/PR#692](https://github.com/raulmur/ORB_SLAM2/pull/692)
 - [x] ROS build with catkin build: [raulmur/ORB_SLAM2/PR#2](https://github.com/raulmur/ORB_SLAM2/pull/2)
 - [x] GPU accelerated: [connorsoohoo/ORB-SLAM2-GPU-RGBD](https://github.com/connorsoohoo/ORB-SLAM2-GPU-RGBD)
-- [x] Binary version of vocab:  [raulmur/ORB_SLAM2/PR#692](https://github.com/raulmur/ORB_SLAM2/pull/692)
+- [x] Binary version of vocab:  [raulmur/ORB_SLAM2/PR#21](https://github.com/raulmur/ORB_SLAM2/pull/21)
 - [x] Pause/ Resume mapping: [raulmur/ORB_SLAM2/PR#587](https://github.com/raulmur/ORB_SLAM2/pull/587)
 - [x] Save/ load map: [raulmur/ORB_SLAM2/PR#381](https://github.com/raulmur/ORB_SLAM2/pull/381)
 
 
 ## Installation
-1) Compile opencv with cuda following this [link](https://cuda-chen.github.io/image%20processing/programming/2020/02/22/build-opencv-dnn-module-with-nvidia-gpu-support-on-ubuntu-1804.html) or this [link](https://learnopencv.com/opencv-dnn-with-gpu-support/)
+1) Compile opencv with cuda following this [link](https://learnopencv.com/opencv-dnn-with-gpu-support/)
 2) Install the prerequisites from [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) original repo.
 3) Install dependencies according to `get_dependencies.sh` and `post_reset_get_dependencies.sh`
 ```bash
